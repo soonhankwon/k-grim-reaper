@@ -1,0 +1,13 @@
+id,item_id,x,y,rotation
+sword,sword,3,0,0
+seal,seal,1,0,0
+lantern,lantern,0,1,0
+ring,ring,4,3,0
+hat,hat,1,2,0
+bell,bell,4,0,0
+yakgwa,yakgwa,-1,-1,0
+rope,rope,-1,-1,0
+sandals,sandals,-1,-1,0
+order,order,-1,-1,0
+coin,coin,-1,-1,0
+mirror,mirror,-1,-1,0

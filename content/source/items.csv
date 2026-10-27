@@ -1,0 +1,13 @@
+id,display_name,description,footprint,tags,cost,uses_per_turn,consumable,icon_id,effect_ids
+sword,낡은 사인검,상하좌우의 물건에 따라 위력이 달라지는 오래된 검.,0:0|0:1|0:2,weapon,1,1,False,sword,sword_use
+seal,봉인부,인접한 무기를 강화합니다. 대각선은 인접하지 않습니다.,0:0,talisman,0,1,False,seal,seal_bonus
+lantern,혼백등,망자의 물건이 어두운 길을 비춥니다.,0:0|0:1,lantern,0,1,False,lantern,lantern_guard
+ring,옥가락지,돌려주지 못한 마지막 약속을 담은 유품.,0:0,keepsake,0,1,False,ring,
+hat,낡은 갓,다음 적 행동까지 피해를 막습니다. 넓은 챙만큼 보따리 자리도 많이 필요합니다.,0:0|1:0|0:1|1:1,,1,1,False,hat,hat_use
+bell,길잡이 방울,작은 공간으로 추가 공격을 확보합니다. 무기 태그가 없어 봉인부 강화는 받지 않습니다.,0:0,,1,1,False,bell,bell_use
+yakgwa,작은 약과,한 번 먹으면 사라져 공간이 비어납니다. 배치를 되돌려도 되살릴 수 없습니다.,0:0,,0,1,True,yakgwa,yakgwa_use
+rope,오라,꺾인 형태의 무기. 회전해 틈에 넣고 인접 보너스를 활용하세요.,0:0|0:1|1:1,weapon,1,1,False,rope,rope_use
+sandals,짚신,갓보다 작은 방어 도구. 남은 공간으로 다른 물건을 챙길 수 있습니다.,0:0|0:1,,1,1,False,sandals,sandals_use
+order,적패지,인도 명령을 담은 문서. 큰 힘을 쓰는 만큼 기력을 아껴야 합니다. 능력은 게임용 창작입니다.,0:0|0:1,,2,1,False,order,order_use
+coin,남겨진 엽전,기력을 쓰지 않고 작은 방어를 얻는 유품.,0:0,keepsake,0,1,False,coin,coin_use
+mirror,작은 동경,거울에 비친 불빛이 길을 지켜 줍니다.,0:0|1:0,,1,1,False,mirror,mirror_use|mirror_bonus

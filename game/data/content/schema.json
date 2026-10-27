@@ -1,0 +1,210 @@
+{
+  "schema_version": 1,
+  "tables": {
+    "items": {
+      "id": {
+        "type": "id"
+      },
+      "display_name": {
+        "type": "text"
+      },
+      "description": {
+        "type": "text"
+      },
+      "footprint": {
+        "type": "cells"
+      },
+      "tags": {
+        "type": "list"
+      },
+      "cost": {
+        "type": "int",
+        "min": 0,
+        "max": 100
+      },
+      "uses_per_turn": {
+        "type": "int",
+        "min": 1,
+        "max": 128
+      },
+      "consumable": {
+        "type": "bool"
+      },
+      "icon_id": {
+        "type": "id"
+      },
+      "effect_ids": {
+        "type": "list"
+      }
+    },
+    "effects": {
+      "id": {
+        "type": "id"
+      },
+      "trigger": {
+        "type": "enum",
+        "values": [
+          "use",
+          "turn_end",
+          "damage_taken",
+          "modify"
+        ]
+      },
+      "operation": {
+        "type": "enum",
+        "values": [
+          "damage",
+          "guard",
+          "heal",
+          "set_guard",
+          "modify_power"
+        ]
+      },
+      "target": {
+        "type": "enum",
+        "values": [
+          "self",
+          "opponent",
+          "adjacent_items"
+        ]
+      },
+      "amount": {
+        "type": "int",
+        "min": 0,
+        "max": 100000
+      },
+      "required_tags": {
+        "type": "list"
+      },
+      "condition_tags": {
+        "type": "list"
+      },
+      "scale": {
+        "type": "enum",
+        "values": [
+          "flat",
+          "per_adjacent"
+        ]
+      },
+      "max_matches": {
+        "type": "int",
+        "min": 1,
+        "max": 64
+      },
+      "affects": {
+        "type": "enum",
+        "values": [
+          "",
+          "damage",
+          "guard",
+          "heal",
+          "set_guard"
+        ]
+      },
+      "stack_group": {
+        "type": "optional_id"
+      },
+      "max_per_action": {
+        "type": "int",
+        "min": 1,
+        "max": 128
+      },
+      "priority": {
+        "type": "int",
+        "min": -1000,
+        "max": 1000
+      }
+    },
+    "tags": {
+      "id": {
+        "type": "id"
+      },
+      "label": {
+        "type": "text"
+      }
+    },
+    "encounters": {
+      "id": {
+        "type": "id"
+      },
+      "order": {
+        "type": "int",
+        "min": 0,
+        "max": 1000
+      },
+      "name": {
+        "type": "text"
+      },
+      "hp": {
+        "type": "int",
+        "min": 1,
+        "max": 1000000
+      },
+      "intent_ids": {
+        "type": "list"
+      },
+      "reaction_ids": {
+        "type": "list"
+      },
+      "visual_id": {
+        "type": "id"
+      }
+    },
+    "loadout": {
+      "id": {
+        "type": "id"
+      },
+      "item_id": {
+        "type": "id"
+      },
+      "x": {
+        "type": "int",
+        "min": -1,
+        "max": 63
+      },
+      "y": {
+        "type": "int",
+        "min": -1,
+        "max": 63
+      },
+      "rotation": {
+        "type": "int",
+        "min": 0,
+        "max": 3
+      }
+    },
+    "rules": {
+      "id": {
+        "type": "id"
+      },
+      "grid_width": {
+        "type": "int",
+        "min": 1,
+        "max": 64
+      },
+      "grid_height": {
+        "type": "int",
+        "min": 1,
+        "max": 64
+      },
+      "max_health": {
+        "type": "int",
+        "min": 1,
+        "max": 1000000
+      },
+      "energy_per_turn": {
+        "type": "int",
+        "min": 0,
+        "max": 100
+      },
+      "victory_heal": {
+        "type": "int",
+        "min": 0,
+        "max": 1000000
+      },
+      "player_visual": {
+        "type": "id"
+      }
+    }
+  }
+}

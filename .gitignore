@@ -1,0 +1,6 @@
+.DS_Store
+.tools/
+build/
+game/.godot/
+game/export_credentials.cfg
+*.tmp

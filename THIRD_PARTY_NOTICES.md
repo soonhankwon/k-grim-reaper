@@ -1,0 +1,23 @@
+# Third-party notices
+
+## Godot Engine 4.7.2
+
+The prototype runs on Godot Engine, distributed under the MIT license.
+The engine and its bundled libraries retain their respective copyright notices and licenses.
+
+- Engine license: [Godot-LICENSE.txt](game/licenses/Godot-LICENSE.txt)
+- Bundled library notices: [Godot-COPYRIGHT.txt](game/licenses/Godot-COPYRIGHT.txt)
+- Upstream: <https://github.com/godotengine/godot/tree/4.7.2-stable>
+- License information: <https://godotengine.org/license/>
+
+## Noto Sans KR
+
+Unmodified variable font, distributed under the SIL Open Font License 1.1.
+Font weight is selected at runtime; the source font is unchanged.
+
+- Font: `game/assets/fonts/NotoSansKR.ttf`
+- Full license and copyright: [OFL.txt](game/assets/fonts/OFL.txt)
+- Upstream: <https://github.com/google/fonts/tree/main/ofl/notosanskr>
+
+The Windows ZIP includes copies of these notices in `LICENSES/`.
+The current geometric game illustrations are project-authored placeholders. No commercial game assets are included.

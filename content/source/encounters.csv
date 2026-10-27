@@ -1,0 +1,4 @@
+id,order,name,hp,intent_ids,reaction_ids,visual_id
+gate_1,0,길 잃은 그림자,18,encounter_1_intent_1|encounter_1_intent_2,,spirit_1
+gate_2,1,매듭 잡귀,24,encounter_2_intent_1|encounter_2_intent_2,,spirit_2
+gate_3,2,먹빛 파수꾼,30,encounter_3_intent_1|encounter_3_intent_2|encounter_3_intent_3,,spirit_3
