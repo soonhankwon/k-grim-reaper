@@ -35,17 +35,26 @@ func snapshot() -> Dictionary:
 	return result
 
 func submit(request: Dictionary) -> CombatResolution:
-	var result := CombatSimulator.resolve(snapshot(), request)
-	if not result.error.is_empty():
-		return result
+	var result := simulate(request)
+	if result.error.is_empty(): commit(result, request)
+	return result
+
+func simulate(request: Dictionary) -> CombatResolution:
+	var is_reward: bool = str(request.get("type", "")).begins_with("reward_")
+	if is_reward: return RewardRules.resolve(snapshot(), request)
+	if str(request.get("type", "")).begins_with("event_"): return EventRules.resolve(snapshot(), request)
+	return CombatSimulator.resolve(snapshot(), request)
+
+func clears_history(result: CombatResolution, request: Dictionary) -> bool:
+	return request.get("type", "") == "start" or str(request.get("type", "")).begins_with("reward_") or str(request.get("type", "")).begins_with("event_") or inventory.items.size() != result.after().inventory_items.size()
+
+func commit(result: CombatResolution, request: Dictionary) -> void:
 	_state = result.after()
 	# No per-item signals here: observers must never see a partially committed result.
-	var consumed: bool = inventory.items.size() != _state.inventory_items.size()
+	var clear_history := clears_history(result, request)
 	inventory.items = _state.inventory_items.duplicate(true)
-	inventory.locked = phase in ["battle", "defeat", "complete"]
-	if request.type == "start" or consumed:
-		inventory.history.clear()
-	return result
+	inventory.locked = phase in ["battle", "route", "event_result", "defeat", "complete"]
+	if clear_history: inventory.history.clear()
 
 func enemy() -> Dictionary:
 	return CombatSimulator.enemy(_state)

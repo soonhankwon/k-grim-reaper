@@ -1,6 +1,6 @@
 # 콘텐츠 데이터와 실행 엔진
 
-0.4.0부터 아이템 ID·이름·특정 태그를 아는 런타임 분기를 제거했다. 기존 12개 아이템, 적 3종, 초기 수치·배치를 데이터로 이관했다. 수백 개 정의를 등록하는 것과 실제 런에 지급하는 물건 수는 별개다.
+0.4.0부터 아이템 ID·이름·특정 태그를 아는 런타임 분기를 제거했다. 기존 12개 아이템과 적 3종을 데이터로 이관했다. 0.5.0에서는 초기 지급 7개와 전투 보상 2회를 데이터로 구성한다. 수백 개 정의를 등록하는 것과 실제 런에 지급하는 물건 수는 별개다.
 
 ```mermaid
 flowchart TD
@@ -22,7 +22,7 @@ flowchart TD
 1. `outputs/data-driven-content/balance-template.xlsx`를 Google Sheets로 가져온다. 이 파일은 로컬에서 수식·값·렌더링을 검증한 가져오기용 템플릿이다. Google 계정에 업로드하거나 원격 문서를 생성하지는 않았다.
 2. `effects`의 `_base_amount`와 `Balance`의 연산별 배율을 조정한다. `amount`는 반올림한 정수 수식 결과다. 배율은 아군과 적의 해당 연산 모두에 적용되며, `modify_power`는 `affects` 연산의 배율을 따른다. 필요하면 기획에 맞는 수식으로 교체해도 된다.
 3. 아이템의 비용·횟수·형태·태그·효과 참조는 `items`에서 편집한다. 복합 효과는 `effect_ids`에 `a_hit|b_guard|c_heal`처럼 연결한다. 원수치 변경은 같은 효과 단위를 참조하는 모든 아이템에 반영된다. 별도 수치가 필요하면 효과 행을 복사하고 새 ID를 부여한다.
-4. `items`, `effects`, `tags`, `loadout`, `encounters`, `rules` 탭을 각각 CSV로 다운로드해 `content/source/`의 동명 파일로 둔다. 헤더는 첫 행이다. `Balance`는 내보내지 않는다. `art.json`은 시각 자료이며 수치 변경 시 그대로 둔다.
+4. `items`, `effects`, `tags`, `loadout`, `encounters`, `rules`, `rewards`, `routes`, `events` 탭을 각각 CSV로 다운로드해 `content/source/`의 동명 파일로 둔다. 헤더는 첫 행이다. `Balance`는 내보내지 않는다. `art.json`은 시각 자료이며 수치 변경 시 그대로 둔다.
 5. 저장소 루트에서 다음을 실행한다.
 
 ```bash
@@ -31,7 +31,7 @@ bash scripts/check.sh
 bash scripts/run.sh
 ```
 
-CSV를 검증한 뒤 `game/data/content/catalog.json`을 임시 파일과 rename으로 교체한다. 실패 시 기존 JSON을 덮어쓰지 않는다. 다음 게임 시작/다시 시작에서 읽으며, 진행 중인 전투에 콘텐츠를 끼워 넣지 않는다. 다시 시작도 로드가 실패하면 기존 세션을 유지하고 오류를 표시한다.
+CSV를 검증한 뒤 `game/data/content/catalog.json`을 임시 파일과 rename으로 교체한다. 실패 시 기존 JSON을 덮어쓰지 않는다. 다음 게임 시작/다시 시작에서 읽으며, 진행 중인 전투에 콘텐츠를 끼워 넣지 않는다. 다시 시작도 로드가 실패하면 기존 세션을 유지하고 오류를 표시한다. 0.6.0부터 저장한 런은 카탈로그 전체 해시와 연결되므로 콘텐츠를 바꾸면 기존 저장을 자동으로 혼합하지 않는다. 해당 데이터를 복구하거나 기존 파일을 보관한 뒤 새 런을 시작한다. [저장 호환성](save-system.md)
 
 다른 폴더 또는 같은 스키마의 JSON도 받을 수 있다.
 
@@ -54,6 +54,9 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 | `tags.csv` | 사용할 태그 등록 | `id`, UI용 `label` |
 | `loadout.csv` | 런에 지급할 인스턴스 | `id`는 인스턴스 ID, `item_id`는 정의 ID, `x`, `y`, `rotation` |
 | `encounters.csv` | 길목의 적 | `order`, `name`, `hp`, 순환 `intent_ids`, `reaction_ids`, `visual_id` |
+| `rewards.csv` | 길목별 보상 후보 | `id`, `encounter_id`, `item_ids` (중복 없는 후보 1~3개) |
+| `routes.csv` | 갈림길 선택지 | `id`, `name`, `description`, 순서대로 연결한 `encounter_ids`, `reward_ids` |
+| `events.csv` | 첫 보상 뒤 유품 사건 | `id`, `step`, 문구·유품 `item_id`·선택 문구·후속 반응·`heal_amount` |
 | `rules.csv` | 런 기본 규칙 한 행 | 격자 크기, 최대 체력, 턴 기력, 승리 회복, 플레이어 시각 자료 참조 |
 | `art.json` | 시각 자료 | 공통 팔레트, 아이콘·캐릭터 사각형 데이터. ID로 참조 |
 | `schema.json` | 엔진이 지원하는 계약 | 열·자료형·열거값·범위. 새 동작을 추가할 때 개발자가 변경 |
@@ -64,6 +67,30 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 - 보관대는 `x=-1,y=-1`, 회전은 0~3이다. 초기 배치 전체의 경계와 겹침을 검사한다.
 - `description`은 분위기·용도 설명이다. 실제 수치와 조건은 효과 데이터에서 UI가 생성한다. 설명에 수치를 다시 적어 두지 않는 편이 좋다.
 - 아이템은 `ItemData(Resource)`의 효과 배열을 가진다. `ItemData`와 `EffectUnit`에는 함수·신호가 없다. 회전·태그 조회·스냅샷 변환·시각 재생은 다른 계층의 책임이다.
+
+## 0.10.0 유품 사건 스키마
+
+`schema_version=4`부터 `events.csv`가 필수다. 사건이 없는 카탈로그는 `events: []`, CSV는 헤더만 둔다. 갱신된 템플릿은 Balance와 데이터 9개 탭이며 `events`의 유품·문구·회복량은 다른 탭처럼 CSV로 내보낸다. 현재 엔진은 경로가 있고 세 길목 이상인 런에서 첫 길목 보상 뒤 사건 하나만 지원한다. `item_id`는 기존 비소모 아이템이며 빈 보따리에 놓을 수 있어야 한다. 유품을 두 번째 길목까지 가져온 경우 `heal_amount`만큼 최대 체력을 넘지 않게 회복하고, 두고 가거나 보관대에 둔 경우 다른 문구가 나온다. 내용과 테스트는 [유품 사건](event-flow.md)을 따른다.
+
+0.9 콘텐츠와 일치하는 옛 저장은 사건 데이터를 제거한 카탈로그 해시를 확인한 뒤 이전한다. 이미 사건 위치를 지난 저장은 진행을 되돌리지 않는다. 텍스트·회복량 등 사건 데이터를 바꾸면 일반 콘텐츠 해시가 달라지므로 해당 콘텐츠를 복구하거나 기존 저장을 보관해야 한다.
+
+## 0.7.0 경로 스키마 (이전 버전)
+
+`schema_version=3`에서는 `routes.csv`가 필수다. 분기를 사용하지 않는 기존 테스트 데이터는 `routes: []` 또는 헤더만 있는 CSV를 둔다. 갱신된 템플릿은 Balance와 데이터 8개 탭이다. 각 행의 `encounter_ids`는 같은 첫 길목으로 시작해 모든 적을 중복 없이 한 번씩 나열하고, `reward_ids`는 마지막을 제외한 각 단계의 보상 ID를 순서대로 연결한다. 현재는 두 경로를 제공하고 적 순서만 다르게 한다. 첫 길목의 보상은 공통이어야 하며 두 경로가 같은 순서일 수 없다. 경로 사용 시 `rewards.encounter_id`는 기존 데이터 검증 및 선형 콘텐츠용 참조이며 실제 지급은 경로의 단계별 `reward_ids`를 따른다.
+
+시각 아틀스의 좌표는 게임 콘텐츠와 별도인 `game/data/presentation/retro-art.json`에 둔다. 시트의 `icon_id`와 `visual_id`가 시각 ID에 매칭되며, 아틀스에 없는 ID는 기존 `art.json` 도형으로 표시된다. 아트 교체가 전투 수치나 저장의 콘텐츠 해시를 바꾸지 않는다. 자세한 내용은 [경로 흐름](route-flow.md)과 [아트 참고](art-reference.md)를 참조한다.
+
+## 0.5.0 스키마 변경 (이전 버전)
+
+`schema_version=2`부터 `rewards` 테이블이 필수다. 보상이 없는 카탈로그는 JSON에 `rewards: []`, CSV에는 헤더만 있는 `rewards.csv`를 둔다. 기존 JSON의 버전 숫자만 바꾸지 말고 이 테이블도 추가한다. 기존 Google Sheets 문서를 계속 사용하면 `rewards` 탭을 추가하고 초기 지급을 의도한 `loadout`으로 조정한다. 갱신된 템플릿은 Balance와 데이터 7개 탭, 총 8개 탭이다.
+
+보상 후보는 `rope|sandals|mirror`처럼 아이템 정의 ID로 연결한다. 한 길목에 한 행만 지정하고 마지막 길목은 제외한다. 목록 순서가 카드 순서이며 무작위 추첨은 하지 않는다. 빈 보따리에도 넣을 수 없는 후보는 거절한다. 선택·확정·건너뛰기 계약은 [보상 흐름](reward-flow.md)에 있다.
+
+## 사연 텍스트
+
+첫 인도 사연은 전투 데이터가 아닌 읽기 전용 표시 콘텐츠다. `content/source/story.csv`의 `id,min_completed,title,teaser,text`를 편집하고 `python3 scripts/import-story.py`를 실행하면 검증 후 `game/data/presentation/story.json`을 원자적으로 교체한다. Google Sheets에서 해당 CSV를 내려받아 `python3 scripts/import-story.py /절대경로/story.csv`로 반영할 수 있다. `--check`는 파일을 바꾸지 않고 원본과 게임 JSON의 일치만 확인한다. 기존 밸런스 템플릿의 데이터 탭과 별도이며, 탭을 자동으로 추가하거나 원격 시트와 동기화하지 않는다.
+
+`min_completed`는 완료한 길목 수이며 0은 시작 시 표시한다. 마지막 항목은 인도 완료 후에만 공개된다. 사연 파일 수정은 카탈로그 해시·저장 포맷을 바꾸지 않는다. 판정과 보상은 사연을 읽지 않는다. [사연 데이터와 표시](story-flow.md)
 
 ## 효과 단위 계약
 

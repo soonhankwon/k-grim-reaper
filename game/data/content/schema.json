@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 4,
   "tables": {
     "items": {
       "id": {
@@ -204,6 +204,70 @@
       },
       "player_visual": {
         "type": "id"
+      }
+    },
+    "rewards": {
+      "id": {
+        "type": "id"
+      },
+      "encounter_id": {
+        "type": "id"
+      },
+      "item_ids": {
+        "type": "list"
+      }
+    },
+    "routes": {
+      "id": {
+        "type": "id"
+      },
+      "name": {
+        "type": "text"
+      },
+      "description": {
+        "type": "text"
+      },
+      "encounter_ids": {
+        "type": "list"
+      },
+      "reward_ids": {
+        "type": "list"
+      }
+    },
+    "events": {
+      "id": {
+        "type": "id"
+      },
+      "step": {
+        "type": "int",
+        "min": 0,
+        "max": 62
+      },
+      "title": {
+        "type": "text"
+      },
+      "description": {
+        "type": "text"
+      },
+      "item_id": {
+        "type": "id"
+      },
+      "take_label": {
+        "type": "text"
+      },
+      "leave_label": {
+        "type": "text"
+      },
+      "take_result": {
+        "type": "text"
+      },
+      "leave_result": {
+        "type": "text"
+      },
+      "heal_amount": {
+        "type": "int",
+        "min": 0,
+        "max": 1000000
       }
     }
   }

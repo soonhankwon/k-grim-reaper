@@ -21,7 +21,7 @@ for path in sorted((root / 'game/scripts').rglob('*.gd')):
             (r'extends\s+(?:Node\w*|Control|CanvasItem)\b', 'Core must remain scene-independent.'),
             (r'\b(?:ActionQueue|CombatPlayback|BattleSession)\b', 'Core cannot depend on application/playback.'),
         ]
-    if path.name in {'combat_simulator.gd', 'inventory_rules.gd', 'effect_applier.gd', 'grid_rules.gd'}:
+    if path.name in {'combat_simulator.gd', 'inventory_rules.gd', 'effect_applier.gd', 'grid_rules.gd', 'reward_rules.gd', 'route_rules.gd', 'event_rules.gd'}:
         rules += [(r'\bsignal\s+\w+|\b(?:load|preload|randf|randi|randomize)\s*\(', 'Pure rules use value inputs only.')]
     if path.name in {'item_data.gd', 'effect_unit.gd'}:
         rules += [(r'\bfunc\s+|\bsignal\s+', 'Content Resources contain fields only, never behavior.')]
@@ -31,6 +31,7 @@ for path in sorted((root / 'game/scripts').rglob('*.gd')):
         rules += [
             (r'\bCombatResolver\b|\bCombatSimulator\.resolve\s*\(', 'UI commands must go through BattleSession.'),
             (r'\.state_snapshot\s*\(', 'UI must render the presentation snapshot.'),
+            (r'\binventory\.(?:place|move_to_stash|undo|add_item)\s*\(', 'Gameplay layout mutations must be persisted through BattleSession.'),
         ]
     for pattern, reason in rules:
         if re.search(pattern, code):

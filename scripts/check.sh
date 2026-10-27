@@ -3,6 +3,8 @@ set -euo pipefail
 source "$(dirname "$0")/common.sh"
 
 python3 "$PROJECT_ROOT/scripts/check-architecture.py"
+python3 "$PROJECT_ROOT/scripts/import-story.py" --check
+python3 "$PROJECT_ROOT/scripts/check-story-import.py"
 
 verify_log() {
   python3 - "$1" "${2:-}" <<'PY'
@@ -28,4 +30,24 @@ python3 "$PROJECT_ROOT/scripts/check-content-import.py" "$GODOT_BIN"
 run_suite tests/test_runner.gd tests.log 'RULE TESTS:'
 run_suite tests/cascade_tests.gd cascade-tests.log 'CASCADE TESTS:'
 run_suite tests/playback_tests.gd playback-tests.log 'PLAYBACK TESTS:'
+run_suite tests/reward_tests.gd reward-tests.log 'REWARD TESTS:'
+run_suite tests/save_tests.gd save-tests.log 'SAVE TESTS:'
+run_suite tests/route_tests.gd route-tests.log 'ROUTE TESTS:'
+run_suite tests/event_tests.gd event-tests.log 'EVENT TESTS:'
+mkdir -p "$PROJECT_ROOT/build/save-process"
+PROCESS_DIR="$(mktemp -d "$PROJECT_ROOT/build/save-process/run.XXXXXXXX")"
+PROCESS_SLOT="$PROCESS_DIR/run.json"
+for STEP in write read; do
+  if [[ "$STEP" == "write" ]]; then MARKER="WRITE"; else MARKER="READ"; fi
+  "$GODOT_BIN" --headless --path "$PROJECT_ROOT/game" --quit-after 1800 \
+    --script tests/save_process_smoke.gd --log-file "$PROJECT_ROOT/build/logs/save-process-$STEP.log" \
+    -- "$PROCESS_SLOT" "$STEP" fixture
+  verify_log "$PROJECT_ROOT/build/logs/save-process-$STEP.log" "SAVE PROCESS $MARKER: PASS"
+done
 run_suite tests/ui_smoke.gd ui-smoke.log 'UI SMOKE: PASS'
+run_suite tests/reward_ui_smoke.gd reward-ui.log 'REWARD UI: PASS'
+run_suite tests/save_ui_smoke.gd save-ui.log 'SAVE UI: PASS'
+run_suite tests/route_ui_smoke.gd route-ui.log 'ROUTE UI: PASS'
+run_suite tests/guide_ui_smoke.gd guide-ui.log 'GUIDE UI: PASS'
+run_suite tests/story_ui_smoke.gd story-ui.log 'STORY UI: PASS'
+run_suite tests/event_ui_smoke.gd event-ui.log 'EVENT UI: PASS'

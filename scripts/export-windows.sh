@@ -31,4 +31,23 @@ text = Path(sys.argv[1]).read_text()
 if 'ERROR:' in text or 'EXPORT CONTENT: PASS' not in text:
     raise SystemExit('Exported content validation failed.')
 PYLOG
+# Test the saved committed state across two separate processes against the release pack.
+mkdir -p "$PROJECT_ROOT/build/export-runtime/save-process"
+PROCESS_DIR="$(mktemp -d "$PROJECT_ROOT/build/export-runtime/save-process/run.XXXXXXXX")"
+PROCESS_SLOT="$PROCESS_DIR/run.json"
+for STEP in write read; do
+  if [[ "$STEP" == "write" ]]; then MARKER="WRITE"; else MARKER="READ"; fi
+  "$GODOT_BIN" --headless --path "$PROJECT_ROOT/build/export-runtime" \
+    --main-pack "$PROJECT_ROOT/build/content-smoke.pck" --quit-after 1800 \
+    --script "$PROJECT_ROOT/game/tests/save_process_smoke.gd" \
+    --log-file "$PROJECT_ROOT/build/logs/export-save-$STEP.log" \
+    -- "$PROCESS_SLOT" "$STEP" shipping
+  python3 - "$PROJECT_ROOT/build/logs/export-save-$STEP.log" "SAVE PROCESS $MARKER: PASS" <<'PYLOG'
+from pathlib import Path
+import sys
+text = Path(sys.argv[1]).read_text()
+if 'ERROR:' in text or sys.argv[2] not in text:
+    raise SystemExit('Exported save validation failed.')
+PYLOG
+done
 python3 "$PROJECT_ROOT/scripts/package.py"

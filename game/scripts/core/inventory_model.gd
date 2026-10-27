@@ -6,16 +6,34 @@ signal changed
 const STASH := Vector2i(-1, -1)
 var dimensions := Vector2i(5, 4)
 var config: Dictionary = {}
+var content_hash := ""
+var legacy_content_hash := ""
+var previous_content_hash := ""
 var definitions: Dictionary = {}
+var authored_items: Dictionary = {}
 var items: Dictionary = {}
 var history: Array[Dictionary] = []
 var locked := false
+
+func copy_for_transaction() -> InventoryModel:
+	var copy := InventoryModel.new()
+	copy.dimensions = dimensions
+	copy.config = config
+	copy.content_hash = content_hash
+	copy.legacy_content_hash = legacy_content_hash
+	copy.previous_content_hash = previous_content_hash
+	copy.definitions = definitions
+	copy.authored_items = authored_items
+	copy.items = items.duplicate(true)
+	copy.history = history.duplicate(true)
+	copy.locked = locked
+	return copy
 
 func add_item(uid: String, definition: ItemData, origin := STASH, rotation := 0) -> bool:
 	if locked or items.has(uid) or definition.footprint.is_empty():
 		return false
 	definitions[definition.id] = definition
-	items[uid] = {"definition": definition.id, "origin": STASH, "rotation": posmod(rotation, 4)}
+	items[uid] = {"definition": str(definition.id), "origin": STASH, "rotation": posmod(rotation, 4)}
 	if origin != STASH:
 		if not placement_error(uid, origin, rotation).is_empty():
 			items.erase(uid)

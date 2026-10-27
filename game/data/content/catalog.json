@@ -1641,6 +1641,20 @@
 			"visual_id": "spirit_3"
 		}
 	],
+	"events": [
+		{
+			"description": "길가에 작은 동경이 놓여 있습니다. 망자가 떠올릴 수 있도록 보따리에 챙길까요?",
+			"heal_amount": 4,
+			"id": "lost_keepsake",
+			"item_id": "mirror",
+			"leave_label": "그 자리에 둔다",
+			"leave_result": "망자는 동경의 기억을 알아보지 못하지만 차사의 안내를 따라 길을 이어갑니다.",
+			"step": 0,
+			"take_label": "동경을 챙긴다",
+			"take_result": "동경을 본 망자가 등불을 떠올리며 숨을 고릅니다. 차사도 잠시 힘을 되찾습니다.",
+			"title": "길가의 동경"
+		}
+	],
 	"items": [
 		{
 			"consumable": false,
@@ -1836,41 +1850,34 @@
 			"rotation": 0,
 			"x": -1,
 			"y": -1
+		}
+	],
+	"rewards": [
+		{
+			"encounter_id": "gate_1",
+			"id": "first_crossing",
+			"item_ids": "rope|sandals|mirror"
 		},
 		{
-			"id": "rope",
-			"item_id": "rope",
-			"rotation": 0,
-			"x": -1,
-			"y": -1
+			"encounter_id": "gate_2",
+			"id": "second_crossing",
+			"item_ids": "order|coin|yakgwa"
+		}
+	],
+	"routes": [
+		{
+			"description": "매듭 잡귀를 먼저 만나고 먹빛 파수꾼에게 향합니다.",
+			"encounter_ids": "gate_1|gate_2|gate_3",
+			"id": "mist_path",
+			"name": "안개 고갯길",
+			"reward_ids": "first_crossing|second_crossing"
 		},
 		{
-			"id": "sandals",
-			"item_id": "sandals",
-			"rotation": 0,
-			"x": -1,
-			"y": -1
-		},
-		{
-			"id": "order",
-			"item_id": "order",
-			"rotation": 0,
-			"x": -1,
-			"y": -1
-		},
-		{
-			"id": "coin",
-			"item_id": "coin",
-			"rotation": 0,
-			"x": -1,
-			"y": -1
-		},
-		{
-			"id": "mirror",
-			"item_id": "mirror",
-			"rotation": 0,
-			"x": -1,
-			"y": -1
+			"description": "먹빛 파수꾼을 먼저 넘어 매듭 잡귀에게 향합니다.",
+			"encounter_ids": "gate_1|gate_3|gate_2",
+			"id": "moon_path",
+			"name": "달그늘 샛길",
+			"reward_ids": "first_crossing|second_crossing"
 		}
 	],
 	"rules": [
@@ -1884,7 +1891,7 @@
 			"victory_heal": 4
 		}
 	],
-	"schema_version": 1.0,
+	"schema_version": 4.0,
 	"tags": [
 		{
 			"id": "weapon",

@@ -21,6 +21,7 @@ func _run() -> void:
 	var scene := load("res://scenes/main.tscn") as PackedScene
 	var main := scene.instantiate()
 	main.content_path = "res://tests/fixtures/baseline.json"
+	main.save_enabled = false
 	root.add_child(main)
 	await process_frame
 	await process_frame

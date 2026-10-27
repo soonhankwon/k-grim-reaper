@@ -25,3 +25,10 @@ Postman CLI is installed on this device, and can be used for API Engineering wor
 - 새 수치나 기존 효과의 조합에는 엔진 분기를 추가하지 않는다. 새 연산/트리거를 도입할 때만 스키마·엔진·문서·검증을 함께 수정한다.
 - 밸런싱은 CSV 원본 수정 → `bash scripts/import-content.sh` → `bash scripts/check.sh` 순서로 반영한다. JSON 입력도 같은 로더를 통과해야 한다.
 - 회귀 테스트의 고정 밸런스는 `game/tests/fixtures/baseline.json`이다. 출시 수치 변경을 통과시키기 위해 이 픽스처를 함께 고치지 않는다. 출시 카탈로그 검증과 고정 규칙 검증을 구분한다.
+- 보상 변경 전 `docs/reward-flow.md`를 읽는다. 지급·후보 교체·확정·건너뛰기는 `BattleSession.submit()`을 거쳐 `RewardRules`에서 순수 값으로 판정한다. UI에서 아이템을 직접 지급하지 않으며 후보 전환 시 이전 배치 이력으로 보상을 복구할 수 없어야 한다.
+
+## 저장과 복구의 경계
+
+- 저장 관련 변경 전 `docs/save-system.md`를 읽는다. 전투·보상은 판정 결과를 저장한 후 커밋하고, 배치 변경은 `BattleSession`에서 복사본 저장 성공 후 적용한다. UI가 인벤토리 상태를 직접 변경하지 않는다.
+- UI는 계속 표시 스냅샷만 읽으며 저장은 최종 판정 상태를 사용한다. 복구할 때 이전 명령이나 연출을 재실행하지 않는다.
+- 저장 실패·버전/콘텐츠 불일치·손상·다른 실행의 변경은 기존 파일을 임의로 덮어쓰지 않는다. 테스트는 실제 사용자 저장과 분리된 임시 경로만 사용한다.

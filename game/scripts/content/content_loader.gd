@@ -208,6 +208,57 @@ func _references(raw: Dictionary) -> String:
 				var trigger := "use" if column == "intent_ids" else "damage_taken"
 				if unit.trigger != trigger or unit.scale != "flat": return "encounters.%s: 의도/반응은 해당 trigger의 flat 효과만 지원합니다." % encounter.id
 	var rule: Dictionary = raw.rules[0]
+	var encounter_ids := index(raw.encounters)
+	var rewarded: Dictionary = {}
+	var last_order := -1
+	for row: Dictionary in raw.encounters: last_order = maxi(last_order, row.order)
+	for reward: Dictionary in raw.rewards:
+		if not encounter_ids.has(reward.encounter_id) or rewarded.has(reward.encounter_id): return "rewards.%s: 없는 길목 또는 중복 보상" % reward.id
+		if encounter_ids[reward.encounter_id].order == last_order: return "rewards.%s: 마지막 길목에는 보상을 지정하지 않습니다." % reward.id
+		var candidates := split_ids(reward.item_ids)
+		if candidates.is_empty() or candidates.size() > 3: return "rewards.%s: 후보는 1~3개입니다." % reward.id
+		for id in candidates:
+			if not items.has(id): return "rewards.%s: 알 수 없는 아이템 %s" % [reward.id, id]
+			var fits := false
+			for rotation in 4:
+				var bounds := Vector2i.ZERO
+				for cell in GridRules.cells(parse_cells(items[id].footprint), rotation): bounds = bounds.max(cell + Vector2i.ONE)
+				fits = fits or (bounds.x <= rule.grid_width and bounds.y <= rule.grid_height)
+			if not fits: return "rewards.%s: 빈 보따리에도 들어가지 않는 후보 %s" % [reward.id, id]
+		rewarded[reward.encounter_id] = true
+	if not raw.routes.is_empty():
+		if raw.routes.size() < 2 or raw.routes.size() > 3 or raw.encounters.size() < 2 or raw.encounters.size() > 64: return "routes: 2~3개 경로와 2~64개 길목이 필요합니다."
+		var sorted_encounters: Array = raw.encounters.duplicate(true)
+		sorted_encounters.sort_custom(func(a, b): return a.order < b.order)
+		var first_id: String = sorted_encounters[0].id
+		var first_reward := ""
+		var sequences: Dictionary = {}
+		var reward_ids := index(raw.rewards)
+		for route: Dictionary in raw.routes:
+			var encounters := split_ids(route.encounter_ids)
+			var rewards := split_ids(route.reward_ids)
+			if route.name.strip_edges().is_empty() or encounters.size() != raw.encounters.size() or encounters[0] != first_id: return "routes.%s: 이름 또는 공통 시작 길목 오류" % route.id
+			if rewards.size() != encounters.size() - 1: return "routes.%s: 보상은 마지막을 제외한 각 길목마다 하나가 필요합니다." % route.id
+			for id in encounters:
+				if not encounter_ids.has(id): return "routes.%s: 알 수 없는 길목 %s" % [route.id, id]
+			for id in rewards:
+				if not reward_ids.has(id): return "routes.%s: 알 수 없는 보상 %s" % [route.id, id]
+			if first_reward.is_empty(): first_reward = rewards[0]
+			elif first_reward != rewards[0]: return "routes: 첫 보상은 경로 선택 전에 공통이어야 합니다."
+			if sequences.has(route.encounter_ids): return "routes: 같은 길목 순서가 중복됩니다."
+			sequences[route.encounter_ids] = true
+	if raw.events.size() > 1: return "events: 현재 출장당 사건은 최대 하나입니다."
+	for event: Dictionary in raw.events:
+		if raw.routes.is_empty() or event.step != 0 or raw.encounters.size() < 3: return "events.%s: 세 길목 이상의 경로에서 첫 길목 뒤 사건만 지원합니다." % event.id
+		if not items.has(event.item_id) or items[event.item_id].consumable: return "events.%s: 유효한 비소모 아이템이 필요합니다." % event.id
+		for field in ["title", "description", "take_label", "leave_label", "take_result", "leave_result"]:
+			if event[field].strip_edges().is_empty() or event[field].length() > 240: return "events.%s: %s가 비어 있거나 너무 깁니다." % [event.id, field]
+		var fits := false
+		for rotation in 4:
+			var bounds := Vector2i.ZERO
+			for cell in GridRules.cells(parse_cells(items[event.item_id].footprint), rotation): bounds = bounds.max(cell + Vector2i.ONE)
+			fits = fits or (bounds.x <= rule.grid_width and bounds.y <= rule.grid_height)
+		if not fits: return "events.%s: 유품이 빈 보따리에도 들어가지 않습니다." % event.id
 	if rule.grid_width * rule.grid_height > EffectApplier.MAX_ACTIVE_ITEMS: return "rules: 현재 엔진의 격자 상한은 64칸입니다."
 	if not raw.art.actors.has(rule.player_visual): return "rules: player_visual 없음"
 	var occupied: Dictionary = {}
@@ -263,18 +314,36 @@ static func materialize(raw: Dictionary) -> Dictionary:
 		item.footprint = parse_cells(row.footprint)
 		for id in split_ids(row.effect_ids): item.effects.append(effects[id])
 		item.icon = raw.art.icons[row.icon_id].duplicate(true)
+		item.icon["presentation_id"] = row.icon_id
 		item.icon["palette"] = raw.art.palette.duplicate()
 		definitions[row.id] = item
 	var config: Dictionary = raw.rules[0].duplicate(true)
 	config.tag_labels = {}
 	for row: Dictionary in raw.tags: config.tag_labels[row.id] = row.label
-	config.player_visual = raw.art.actors[config.player_visual].duplicate(true)
+	var player_visual_id: String = config.player_visual
+	config.player_visual = raw.art.actors[player_visual_id].duplicate(true)
+	config.player_visual["presentation_id"] = player_visual_id
 	config.encounters = []
+	config.reward_offers = {}
+	config.reward_definitions = {}
+	for row: Dictionary in raw.rewards:
+		config.reward_offers[row.encounter_id] = {"id": row.id, "item_ids": Array(split_ids(row.item_ids))}
+		config.reward_definitions[row.id] = {"id": row.id, "item_ids": Array(split_ids(row.item_ids))}
 	var encounters: Array = raw.encounters.duplicate(true)
 	encounters.sort_custom(func(a, b): return a.order < b.order)
 	for row: Dictionary in encounters:
 		var enemy := {"id": row.id, "name": row.name, "hp": row.hp, "visual": raw.art.actors[row.visual_id].duplicate(true), "intents": [], "reactions": []}
+		enemy.visual["presentation_id"] = row.visual_id
 		for id in split_ids(row.intent_ids): enemy.intents.append(ItemCodec.effect(effects[id]))
 		for id in split_ids(row.reaction_ids): enemy.reactions.append(ItemCodec.effect(effects[id]))
 		config.encounters.append(enemy)
+	config.events = raw.events.duplicate(true)
+	config.routes = []
+	var positions: Dictionary = {}
+	for index in config.encounters.size(): positions[config.encounters[index].id] = index
+	for row: Dictionary in raw.routes:
+		var order: Array = []
+		for id in split_ids(row.encounter_ids): order.append(positions[id])
+		config.routes.append({"id": row.id, "name": row.name, "description": row.description,
+			"encounters": order, "rewards": Array(split_ids(row.reward_ids))})
 	return {"definitions": definitions, "config": config, "loadout": raw.loadout.duplicate(true)}

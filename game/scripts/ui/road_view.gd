@@ -10,6 +10,13 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func _actor(visual: Dictionary, origin: Vector2, faded := false) -> void:
+	var sprite := PresentationArt.actor_region(str(visual.get("presentation_id", "")))
+	if sprite.has_area():
+		var box := Vector2(150, 132)
+		var fit := minf(box.x / sprite.size.x, box.y / sprite.size.y)
+		var sprite_size := sprite.size * fit
+		draw_texture_rect_region(PresentationArt.ACTORS, Rect2(origin + Vector2((box.x - sprite_size.x) / 2, box.y - sprite_size.y), sprite_size), sprite, Color(0.45, 0.45, 0.45) if faded else Color.WHITE)
+		return
 	draw_set_transform(origin, 0, Vector2.ONE * 4)
 	for part: Array in visual.get("parts", []):
 		var color := Color(part[4])

@@ -104,9 +104,9 @@ func _test_validation() -> void:
 func _test_unrecognized_names() -> void:
 	var renamed := raw.duplicate(true)
 	var map: Dictionary = {}
-	for table in ["items", "effects", "tags", "loadout", "encounters", "rules"]:
+	for table in ["items", "effects", "tags", "loadout", "encounters", "rules", "rewards", "routes", "events"]:
 		for row: Dictionary in renamed[table]: map[row.id] = "new_" + str(row.id)
-	for table in ["items", "effects", "tags", "loadout", "encounters", "rules"]:
+	for table in ["items", "effects", "tags", "loadout", "encounters", "rules", "rewards", "routes", "events"]:
 		for row: Dictionary in renamed[table]:
 			row.id = map[row.id]
 			for key in ["tags", "effect_ids", "required_tags", "condition_tags", "intent_ids", "reaction_ids"]:
@@ -217,9 +217,10 @@ func _test_equipment_reactions() -> void:
 func _test_csv() -> void:
 	var temporary := ProjectSettings.globalize_path("res://../build/content-test")
 	DirAccess.make_dir_recursive_absolute(temporary)
-	for table in ["items", "effects", "tags", "loadout", "encounters", "rules"]:
+	var schema: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ContentLoader.SCHEMA_PATH))
+	for table in ["items", "effects", "tags", "loadout", "encounters", "rules", "rewards", "routes", "events"]:
 		var csv := FileAccess.open(temporary.path_join(table + ".csv"), FileAccess.WRITE)
-		var columns: Array = raw[table][0].keys()
+		var columns: Array = schema.tables[table].keys()
 		csv.store_csv_line(PackedStringArray(columns))
 		for row: Dictionary in raw[table]:
 			var values: PackedStringArray = []

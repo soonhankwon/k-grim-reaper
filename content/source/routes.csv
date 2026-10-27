@@ -1,0 +1,3 @@
+id,name,description,encounter_ids,reward_ids
+mist_path,안개 고갯길,매듭 잡귀를 먼저 만나고 먹빛 파수꾼에게 향합니다.,gate_1|gate_2|gate_3,first_crossing|second_crossing
+moon_path,달그늘 샛길,먹빛 파수꾼을 먼저 넘어 매듭 잡귀에게 향합니다.,gate_1|gate_3|gate_2,first_crossing|second_crossing

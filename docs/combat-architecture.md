@@ -1,6 +1,6 @@
 # 전투 판정과 재생
 
-0.2.0에서 도입하고 0.4.0 데이터 기반 효과 엔진에서도 유지하는 구조. 스레드를 도입하지 않고, 메인 스레드의 입력·신호·Tween 콜백 사이에서 상태가 섞이는 문제를 제어한다.
+0.2.0에서 도입하고 0.10.0 데이터 기반 효과·보상·저장·경로·사건에서도 유지하는 구조. 스레드를 도입하지 않고, 메인 스레드의 입력·신호·Tween 콜백 사이에서 상태가 섞이는 문제를 제어한다.
 
 ```mermaid
 flowchart LR
@@ -9,7 +9,8 @@ flowchart LR
     Rules[InventoryRules 미리보기] --> Effects[EffectApplier 공통 효과 해석]
     Sim --> Effects
     Sim --> Result[CombatResolution 최종 상태 + 이벤트]
-    Result --> Store[CombatResolver 한 번 커밋]
+    Result --> Save[SaveService 최종 결과 기록]
+    Save --> Store[CombatResolver 한 번 커밋]
     Result --> Queue[ActionQueue]
     Queue --> Command[CombatEventCommand]
     Command --> Playback[CombatPlayback 표시 상태]
@@ -25,22 +26,26 @@ flowchart LR
 | `ItemData` / `EffectUnit` | 검증된 콘텐츠의 Resource 필드 | 함수·신호·Callable |
 | `ContentLoader` / `ItemCodec` | CSV·JSON 검증 → Resource → 분리된 값 스냅샷 | 전투 실행·연출 |
 | `CombatSimulator` | 복사한 상태에서 요청과 연쇄 효과를 끝까지 계산 | SceneTree, 신호, Tween, await, 외부 객체 변경 |
+| `RouteRules` | 경로 단계·적 순서·보상 참조를 값으로 계산 | Node, IO, 시간, UI |
+| `EventRules` | 유품 임시 선택·확정·건너뛰기·후속 확인의 순수 값 판정 | 콘텐츠 ID, IO, Resource, UI |
+| `RewardRules` | 승리 제안·후보 선택·확정·건너뛰기의 순수 값 판정 | 콘텐츠 ID, IO, Resource, UI |
 | `CombatResolution` | 이전·최종 상태, 이벤트 목록. 접근 시 깊은 복사 반환 | 실행 중인 게임 객체 |
 | `CombatResolver` | 성공한 결과만 권위 상태와 인벤토리에 커밋 | UI 갱신 신호, 연출 |
-| `BattleSession` | 게임의 명령 진입점, 재생 중 입력 잠금, 재시작 | 화면별 전투 판정 |
+| `SaveCodec` / `SaveService` | 값 검증·파일 교체·이전 정상본 관리 | UI 표시, 재판정 |
+| `BattleSession` | 명령 진입점, 저장 성공 후 커밋, 재생 중 입력 잠금, 재시작·배치 트랜잭션 | 화면별 전투 판정 |
 | `ActionQueue` | 한 번에 한 명령, 완료·취소·시간 초과 관리 | 전투 규칙 |
 | `CombatEventCommand` | 한 이벤트의 Tween과 완료·취소 | 실제 체력·기력·인벤토리 수정 |
 | `CombatPlayback` | 이벤트 순서에 따른 표시 상태, 건너뛰기·복구 | 판정 재실행 |
 | UI | `display_snapshot()`으로 수치·보드·사용 표시를 함께 그림 | 권위 상태를 미리 읽어 표시 |
 
-`CombatResolver`의 동기 헬퍼는 기존 헤드리스 규칙 테스트에 사용한다. 실제 게임은 `BattleSession.submit()`만 호출한다. 배치 변경은 재생이 없는 준비 단계에서 `InventoryModel`을 거친다.
+`CombatResolver`의 동기 헬퍼는 기존 헤드리스 규칙 테스트에 사용한다. 실제 게임의 전투·보상 요청은 `BattleSession.submit()`만 호출한다. 배치 변경은 `BattleSession`이 `InventoryModel` 복사본을 검증하고 저장한 뒤 적용한다. 보상과 사건 요청은 `CombatResolver`가 순수 `RewardRules`와 `EventRules`로 분기한다. 두 번째 승리에서의 후속 반응과 회복은 순수 판정 내 승리 이벤트 뒤에 원인 ID를 붙여 기록한다. 상세한 계약은 [보상 흐름](reward-flow.md)과 [저장 시스템](save-system.md)을 따른다.
 
 ## 한 행동의 처리
 
 1. 세션이 요청 중·재생 중인지 검사한다. 잠겼으면 거절하고 기력·상태를 건드리지 않는다.
 2. `ItemCodec`이 아이템과 효과 Resource를 순수 값 스냅샷으로 바꾸고 판정기에 전달한다.
 3. 판정기는 복사본에서 비용, 인접 보너스, 타격, 반응 효과, 소모, 사망·승패를 계산한다.
-4. 성공했을 때만 최종 상태를 한 번 확정한다. 커밋 도중 인벤토리 `changed`를 발행하지 않는다.
+4. 판정이 성공하면 최종 상태를 저장한다. 저장까지 성공했을 때만 최종 상태를 한 번 확정한다. 실패하면 현재 상태와 이력을 유지한다. 커밋 도중 인벤토리 `changed`를 발행하지 않는다.
 5. 표시 상태는 행동 전 상태에서 시작한다. 큐의 각 명령이 끝나면 해당 이벤트의 `after` 스냅샷으로 옮긴다.
 6. 마지막 명령 이후 표시 상태를 최종 상태와 맞추고 다음 입력을 허용한다.
 
@@ -57,7 +62,7 @@ flowchart LR
 - 치명타를 받은 적의 가시는 해당 타격에 반응할 수 있다. 파생 효과가 끝난 뒤 승패를 판정하며, 양쪽 사망은 패배로 처리한다. 죽은 대상에게 후속 방어·회복을 주지 않는다.
 - 소비는 연쇄 효과 뒤, 승패 판정 전에 확정한다. 턴 종료 시 연쇄가 끝난 뒤 살아 있으면 다음 턴의 방어 해제·기력 회복을 처리한다.
 
-각 이벤트는 `id`, `cause_id`, `kind`, `source`/`target` 등 효과 정보, `message`, `after`를 가진다. ID는 해당 요청 안에서 순서대로 부여한다. 동일 값 입력은 동일 결과와 재생 순서를 만든다. 현 버전에는 난수나 영구 저장이 없다.
+각 이벤트는 `id`, `cause_id`, `kind`, `source`/`target` 등 효과 정보, `message`, `after`를 가진다. ID는 해당 요청 안에서 순서대로 부여한다. 동일 값 입력은 동일 결과와 재생 순서를 만든다. 현재 난수는 없으며 저장은 최종 상태를 보관한다.
 
 검증 시나리오의 예:
 

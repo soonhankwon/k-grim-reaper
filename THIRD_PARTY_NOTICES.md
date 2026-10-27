@@ -20,4 +20,4 @@ Font weight is selected at runtime; the source font is unchanged.
 - Upstream: <https://github.com/google/fonts/tree/main/ofl/notosanskr>
 
 The Windows ZIP includes copies of these notices in `LICENSES/`.
-The current geometric game illustrations are project-authored placeholders. No commercial game assets are included.
+The current retro-pixel background, characters and item atlases are AI-generated provisional artwork for this project. Screenshots from commercial games were studied for layout and visual direction; their image assets are not included.

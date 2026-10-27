@@ -16,6 +16,11 @@ var details: PanelContainer
 var detail_scroll: ScrollContainer
 var enemy_bar: ProgressBar
 var hero_bar: ProgressBar
+var rewards: RewardPanel
+var routes: RoutePanel
+var guide: GuidePanel
+var story: StoryPanel
+var encounter_event: EventPanel
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -70,10 +75,12 @@ func _bar(rect: Rect2, color: Color) -> ProgressBar:
 func _build() -> void:
 	_label(self, "", "저승 보따리", Rect2(24, 10, 180, 30), 22, GOLD)
 	_label(self, "chapter", "", Rect2(270, 15, 380, 24), 15)
-	_label(self, "", "첫 인도 · 연습용", Rect2(870, 15, 180, 24), 14, MUTED)
+	_label(self, "", "첫 인도 · 연습용", Rect2(770, 15, 155, 24), 14, MUTED)
+	_button(self, "story", "사연", Rect2(934, 8, 100, 32)).add_theme_font_size_override("font_size", 13)
+	_button(self, "guide", "길잡이", Rect2(1042, 8, 84, 32)).add_theme_font_size_override("font_size", 13)
 	_button(self, "restart", "다시 시작", Rect2(1134, 8, 122, 32)).add_theme_font_size_override("font_size", 13)
 	_label(self, "bag", "", Rect2(330, 60, 260, 26), 16, GOLD)
-	_label(self, "passive", "", Rect2(498, 419, 420, 24), 14, JADE)
+	_label(self, "passive", "", Rect2(498, 414, 420, 24), 14, JADE)
 	board = InventoryBoard.new()
 	board.position = Vector2(414, 84)
 	board.size = Vector2(412, 324)
@@ -102,7 +109,7 @@ func _build() -> void:
 	road.position = Vector2(0, 446)
 	road.size = Vector2(1280, 206)
 	add_child(road)
-	_label(self, "", "신입 차사", Rect2(144, 475, 190, 30), 17, PAPER).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_label(self, "hero_name", "신입 차사", Rect2(144, 475, 190, 30), 17, PAPER).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label(self, "energy", "", Rect2(350, 511, 140, 50), 21, GOLD)
 	_label(self, "enemy", "", Rect2(810, 487, 240, 30), 18, PAPER).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label(self, "intent", "", Rect2(760, 453, 340, 30), 19, GOLD).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -113,6 +120,9 @@ func _build() -> void:
 	_label(self, "log", "", Rect2(425, 550, 350, 58), 13, MUTED).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_label(self, "notice", "", Rect2(360, 452, 385, 48), 13, JADE)
 	_label(self, "help", "", Rect2(24, 696, 1232, 24), 12, MUTED).horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	var teaser := _button(self, "story_teaser", "", Rect2(430, 552, 340, 78))
+	teaser.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	teaser.add_theme_font_size_override("font_size", 13)
 	details = PanelContainer.new()
 	details.position = Vector2(974, 76)
 	details.size = Vector2(272, 250)
@@ -138,27 +148,23 @@ func _build() -> void:
 	for spec in [["item_name", 22, GOLD], ["item_meta", 12, MUTED], ["description", 15, PAPER], ["power", 18, JADE], ["sources", 12, MUTED], ["item_hint", 12, GOLD]]:
 		_label(column, spec[0], "", Rect2(0, 0, 236, 0), spec[1], spec[2])
 	details.hide()
+	guide = GuidePanel.new()
+	add_child(guide)
+	story = StoryPanel.new()
+	add_child(story)
+	_button(self, "reward_skip", "보상 받지 않기", Rect2(974, 414, 272, 32)).hide()
+	rewards = RewardPanel.new()
+	add_child(rewards)
+	routes = RoutePanel.new()
+	add_child(routes)
+	encounter_event = EventPanel.new()
+	add_child(encounter_event)
 
 func _draw() -> void:
-	# A single landscape connects the inventory and the encounter.
-	draw_rect(Rect2(0, 0, 1280, 720), Color("171e28"))
+	# One original retro-pixel landscape connects the inventory and encounter.
+	draw_texture_rect(PresentationArt.BACKGROUND, Rect2(0, 0, 1280, 720), false)
 	draw_rect(Rect2(0, 0, 1280, 48), Color("111820"))
 	draw_line(Vector2(0, 47), Vector2(1280, 47), Color("5b5548"), 2)
-	draw_circle(Vector2(1100, 128), 48, Color("656d68"))
-	draw_circle(Vector2(1117, 116), 43, Color("171e28"))
-	for x in range(-80, 1320, 150):
-		var peak := 240 + posmod(x, 73)
-		draw_colored_polygon(PackedVector2Array([Vector2(x, 540), Vector2(x+110, peak), Vector2(x+300, 540)]), Color("243039"))
-	for x in [0, 85, 1190, 1260]:
-		draw_rect(Rect2(x, 112, 16, 502), Color("111e27"))
-		for y in range(160, 480, 64):
-			draw_rect(Rect2(x-26, y, 70, 8), Color("111e27"))
-	draw_rect(Rect2(0, 602, 1280, 98), Color("263632"))
-	draw_rect(Rect2(0, 620, 1280, 6), Color("657064"))
-	draw_rect(Rect2(0, 626, 1280, 22), Color("39443a"))
-	for x in range(0, 1280, 42):
-		draw_rect(Rect2(x, 627, 2, 20), Color("202e2c"))
-		draw_rect(Rect2(x+4, 631, 28, 3), Color("4a5546"))
 	draw_rect(Rect2(0, 696, 1280, 24), Color("111820"))
 	# Folded wrapping cloth, with a stitched inset and a restrained knot motif.
 	var cloth := PackedVector2Array([Vector2(321,58),Vector2(916,58),Vector2(949,91),Vector2(938,421),Vector2(910,447),Vector2(323,447),Vector2(290,413),Vector2(299,87)])

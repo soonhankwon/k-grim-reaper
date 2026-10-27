@@ -15,8 +15,8 @@ var _failure := ""
 static func initial_state(config: Dictionary) -> Dictionary:
 	return {"phase": "packing", "encounter": 0, "config": config.duplicate(true), "health": config.max_health, "energy": config.energy_per_turn,
 		"guard": 0, "enemy_health": config.encounters[0].hp, "enemy_guard": 0, "turn": 1, "used": {},
-		"messages": ["첫 인도에 앞서 보따리를 꾸려 보세요."], "reactions": [],
-		"packed_items": {}, "inventory_items": {}}
+		"messages": ["첫 인도에 앞서 보따리를 꾸려 보세요."], "reactions": [], "reward": {}, "route": {"choice":"", "step":0},
+		"packed_items": {}, "inventory_items": {}, "event": {}}
 
 static func enemy(state: Dictionary) -> Dictionary:
 	return state.config.encounters[state.encounter].duplicate(true)
@@ -55,6 +55,7 @@ func _resolve_request(request: Dictionary) -> void:
 		"use_item": _use(str(request.get("uid", "")))
 		"end_turn": _end_turn()
 		"advance": _advance()
+		"choose_route": _choose_route(str(request.get("route_id", "")))
 		_: _failure = "알 수 없는 전투 명령입니다."
 
 func _start() -> void:
@@ -121,21 +122,46 @@ func _advance() -> void:
 	if _state.phase != "victory":
 		_failure = "전투를 마친 뒤 다음 길목으로 이동하세요."
 		return
-	if _state.encounter == _state.config.encounters.size() - 1:
+	_state.reward = {}
+	if RouteRules.last(_state):
 		_state.phase = "complete"
 		_record("practice_completed", "모든 길목을 통과했습니다. 인도 연습 완료!")
+	elif not EventRules.due(_state).is_empty():
+		EventRules.open(_state, EventRules.due(_state))
+		_record("event_opened", "길가에서 유품을 발견했습니다.")
+	elif RouteRules.enabled(_state) and _state.route.choice.is_empty():
+		_state.phase = "route"
+		_record("route_requested", "다음 길을 고르세요. 먼저 만날 적이 달라집니다.")
 	else:
-		_state.encounter += 1
-		_state.phase = "packing"
-		_state.enemy_health = enemy(_state).hp
-		_state.enemy_guard = 0
-		_state.used.clear()
-		_state.energy = _state.config.energy_per_turn
-		_state.guard = 0
-		_state.turn = 1
-		# Explicit test reactions are encounter-scoped; authored reactions come from config.
-		_state.reactions.clear()
-		_record("encounter_prepared", "다음 길목에 맞게 보따리를 정리하세요.")
+		if RouteRules.enabled(_state):
+			_state.route.step += 1
+			_state.encounter = RouteRules.current(_state).encounters[_state.route.step]
+		else: _state.encounter += 1
+		_prepare_encounter("다음 길목에 맞게 보따리를 정리하세요.")
+
+func _choose_route(route_id: String) -> void:
+	if _state.phase != "route" or not RouteRules.enabled(_state) or not _state.route.choice.is_empty():
+		_failure = "지금은 길을 선택할 수 없습니다."
+		return
+	var route := RouteRules.find(_state.config, route_id)
+	if route.is_empty():
+		_failure = "제시된 경로 중에서 선택하세요."
+		return
+	_state.route.choice = route_id
+	_state.route.step = 1
+	_state.encounter = route.encounters[1]
+	_prepare_encounter("%s 선택 · 다음 길목을 준비하세요." % route.name)
+
+func _prepare_encounter(message: String) -> void:
+	_state.phase = "packing"
+	_state.enemy_health = enemy(_state).hp
+	_state.enemy_guard = 0
+	_state.used.clear()
+	_state.energy = _state.config.energy_per_turn
+	_state.guard = 0
+	_state.turn = 1
+	_state.reactions.clear()
+	_record("encounter_prepared", message)
 
 func _drain_effects() -> void:
 	while not _pending.is_empty():
@@ -228,7 +254,19 @@ func _settle_outcome() -> void:
 		_state.phase = "victory"
 		var recovered := mini(int(_state.config.victory_heal), maxi(0, int(_state.config.max_health) - int(_state.health)))
 		_state.health += recovered
-		_record("victory", "길이 열렸습니다. 체력 %d 회복 · 보따리를 다시 정리하세요." % recovered)
+		RewardRules.open(_state)
+		var event: Dictionary = _state.get("event", {})
+		var entry := EventRules.definition(_state)
+		var followup: bool = not entry.is_empty() and event.get("status", "") in ["carried", "left"] and RouteRules.step(_state) == int(entry.step) + 1
+		if followup:
+			event.outcome = "take" if event.selected == "take" and _state.packed_items.has(event.uid) else "leave"
+			event.status = "resolved"
+			_state.phase = "event_result"
+		var victory_id := _record("victory", "길이 열렸습니다. 체력 %d 회복." % recovered)
+		if followup:
+			var amount := mini(int(entry.heal_amount), maxi(0, int(_state.config.max_health) - int(_state.health))) if event.outcome == "take" else 0
+			_state.health += amount
+			_record("event_followup", "%s%s" % [entry.take_result if event.outcome == "take" else entry.leave_result, " · 체력 %d 회복" % amount if event.outcome == "take" else ""], {"source": event.uid, "cause_id": victory_id})
 
 func _record(kind: String, message: String, details: Dictionary = {}) -> int:
 	if _events.size() >= MAX_EFFECTS:
