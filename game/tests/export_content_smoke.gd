@@ -13,6 +13,10 @@ func _run() -> void:
 		push_error("Test fixture must not ship in release content")
 		quit(1)
 		return
+	if FileAccess.file_exists("res://tests/fixtures/space-experiment.json"):
+		push_error("Experimental item must not ship in release content")
+		quit(1)
+		return
 	var scene := load("res://scenes/main.tscn") as PackedScene
 	var main := scene.instantiate()
 	main.save_enabled = false

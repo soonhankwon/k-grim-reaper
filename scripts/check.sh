@@ -30,6 +30,8 @@ python3 "$PROJECT_ROOT/scripts/check-content-import.py" "$GODOT_BIN"
 run_suite tests/test_runner.gd tests.log 'RULE TESTS:'
 run_suite tests/cascade_tests.gd cascade-tests.log 'CASCADE TESTS:'
 run_suite tests/playback_tests.gd playback-tests.log 'PLAYBACK TESTS:'
+run_suite tests/feedback_tests.gd feedback-tests.log 'FEEDBACK TESTS:'
+run_suite tests/space_experiment_tests.gd space-experiment-tests.log 'SPACE EXPERIMENT TESTS:'
 run_suite tests/reward_tests.gd reward-tests.log 'REWARD TESTS:'
 run_suite tests/save_tests.gd save-tests.log 'SAVE TESTS:'
 run_suite tests/route_tests.gd route-tests.log 'ROUTE TESTS:'

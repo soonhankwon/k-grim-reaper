@@ -44,7 +44,7 @@ func _ready() -> void:
 	session = BattleSession.new()
 	add_child(session)
 	session.presented.connect(_refresh)
-	session.event_started.connect(_on_event_started)
+	session.event_presented.connect(_on_event_presented)
 	session.playback_recovered.connect(func(reason: String): _notice(reason, true))
 	session.playback.bind_feedback(road)
 	if save_enabled: session.save_service = SaveService.new(save_path)
@@ -552,7 +552,7 @@ func _submit(request: Dictionary) -> void:
 	if not error.is_empty(): _notice(error, true)
 	else: _notice("행동 결과를 순서대로 재생합니다.")
 
-func _on_event_started(event: Dictionary) -> void:
+func _on_event_presented(event: Dictionary) -> void:
 	_notice(event.message)
 
 func _notice(message: String, error := false) -> void:

@@ -2,7 +2,7 @@
 
 초보 한국 저승사자가 퇴마 도구와 망자의 유품을 함께 꾸리는 인벤토리 퍼즐 로그라이트. Godot 기반으로 Steam에 먼저 출시하고, 출시 반응을 확인한 뒤 iOS/Android 이식을 판단한다. 1인 파트타임 개발을 전제로 한다.
 
-현재 버전은 **0.10.0 유품 사건 프로토타입**이다. 기존 아이템 12종 중 7개를 가지고 시작해, 첫 두 전투 후 후보 3개 중 1개를 보상으로 고른다. 선택한 보상을 보따리에 시험 배치하고 확정한 뒤 다음 길목으로 이동한다. 전투·보상·배치가 확정될 때 자동 저장하고 다음 실행에서 이어간다. 아이템·효과·보상 후보는 CSV/JSON으로 관리한다. 전투 판정과 Action Queue 재생을 분리하며, 재생 중에는 다음 행동과 배치를 잠근다. 현재 단계에 맞는 길잡이가 배치·전투·보상·경로 선택을 안내한다. 첫 출장의 짧은 사연은 길목 진행에 따라 단계적으로 기록된다. 첫 보상 뒤 유품을 챙기거나 남겨두는 사건을 만나며, 두 번째 만남에서 당시 보따리에 유품을 넣었는지에 따라 반응이 달라진다. 이어서 두 길 중 하나를 선택하면 나머지 두 적의 순서가 바뀐다. 배경·캐릭터·아이템에는 정적인 레트로 픽셀 시안을 적용했다. 최종 아트·애니메이션·사운드와 추가 사연 선택지는 후속 단계다.
+현재 버전은 **0.11.0 전투 피드백 프로토타입**이다. 기존 아이템 12종 중 7개를 가지고 시작해, 첫 두 전투 후 후보 3개 중 1개를 보상으로 고른다. 선택한 보상을 보따리에 시험 배치하고 확정한 뒤 다음 길목으로 이동한다. 전투·보상·배치가 확정될 때 자동 저장하고 다음 실행에서 이어간다. 아이템·효과·보상 후보는 CSV/JSON으로 관리한다. 전투 판정과 Action Queue 재생을 분리하며, 재생 중에는 다음 행동과 배치를 잠근다. 행동·피격·방어·회복에 대상별 피드백을 표시하고 수치와 체력바를 같은 시점에 반영한다. 현재 단계에 맞는 길잡이가 배치·전투·보상·경로 선택을 안내한다. 첫 출장의 짧은 사연은 길목 진행에 따라 단계적으로 기록된다. 첫 보상 뒤 유품을 챙기거나 남겨두는 사건을 만나며, 두 번째 만남에서 당시 보따리에 유품을 넣었는지에 따라 반응이 달라진다. 이어서 두 길 중 하나를 선택하면 나머지 두 적의 순서가 바뀐다. 배경·캐릭터·아이템에는 정적인 레트로 픽셀 시안을 적용했다. 최종 아트·애니메이션·사운드와 추가 사연 선택지는 후속 단계다.
 
 ## 실행
 
@@ -10,9 +10,11 @@
 2. [game/project.godot](game/project.godot)을 가져오고 **F5**로 실행한다.
 3. macOS/Linux에서는 저장소 루트에서 `bash scripts/run.sh`로도 실행할 수 있다.
 
+별도 공간 기회비용 실험은 `bash scripts/run-space-experiment.sh`로 실행한다. 실험용 1×4 대검은 테스트 픽스처에만 있고 사용자 저장을 읽거나 쓰지 않는다. [실험 안내](docs/space-experiment.md)
+
 다른 위치에 설치했다면 `GODOT_BIN='/설치/경로/Godot' bash scripts/run.sh`로 경로를 지정한다. 스크립트는 `.godot-version`과 엔진 버전이 맞는지 검사한다. Windows에서는 Godot 편집기로 실행하거나 아래 ZIP을 풀고 EXE를 실행한다.
 
-- 로컬 Windows 패키지: `build/JeoseungBundle-prototype-0.10.0-windows.zip`
+- 로컬 Windows 패키지: `build/JeoseungBundle-prototype-0.11.0-windows.zip`
 - 로그: `build/logs/`
 - 개발 환경: macOS arm64, Compatibility 렌더러, 1280×720 기준.
 - Windows x86_64 교차 내보내기는 가능하다. **Windows 실기기 실행은 아직 미검증**이다.
@@ -80,7 +82,7 @@ bash scripts/export-windows.sh
 
 `extract-templates.py`는 버전을 확인한 뒤 Windows x86_64 템플릿 두 개만 `.tools/templates/`에 추출한다. 빌드 스크립트는 검사를 통과한 뒤 PCK를 포함한 EXE와 라이선스·조작 안내를 묶어 ZIP으로 만든다. 업로드·Steam 등록·공개는 수행하지 않는다. 이 작업 환경에는 템플릿이 준비되어 있다.
 
-`.tools/`, `build/`, `game/.godot/`는 Git에서 제외한다. 원본 글꼴·라이선스·Resource·Godot UID는 관리 대상이다. 원격 저장소는 [soonhankwon/k-grim-reaper](https://github.com/soonhankwon/k-grim-reaper)다. 로컬 작업본 스냅샷은 `build/source-snapshot-0.10.0-2026-10-27.zip`에 별도로 보관한다.
+`.tools/`, `build/`, `game/.godot/`는 Git에서 제외한다. 원본 글꼴·라이선스·Resource·Godot UID는 관리 대상이다. 원격 저장소는 [soonhankwon/k-grim-reaper](https://github.com/soonhankwon/k-grim-reaper)다. 로컬 작업본 스냅샷은 `build/source-snapshot-0.11.0-2026-10-28.zip`에 별도로 보관한다.
 
 ## 구조
 
@@ -111,6 +113,7 @@ docs/              설계·진행·테스트 기록
 - [보상 흐름](docs/reward-flow.md): 후보 선택·시험 배치·확정·건너뛰기와 상태 전환.
 - [저장 시스템](docs/save-system.md): 자동 저장·복구·콘텐츠 호환과 저장 실패 처리.
 - [UI 구성](docs/ui-layout.md): 참고 화면, 배치·전투 조작, 표현 규칙.
+- [전투 피드백](docs/combat-feedback.md): 타격·방어·회복 표시 시점과 취소 규칙.
 - [전투 아키텍처](docs/combat-architecture.md): 순수 판정, 원자적 커밋, 순차 재생, 연쇄·취소·복구 규칙.
 - [개발 플랜](docs/development-plan.md): 마일스톤과 완료 기준.
 - [개발 진행 기록](docs/progress.md): 구현 범위, 검증 근거, 다음 작업.

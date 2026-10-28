@@ -4,6 +4,7 @@ extends Node
 
 signal presented
 signal event_started(event: Dictionary)
+signal event_presented(event: Dictionary)
 signal playback_recovered(reason: String)
 var playback: CombatPlayback
 var _resolver: CombatResolver
@@ -15,6 +16,7 @@ func _ready() -> void:
 	add_child(playback)
 	playback.presented.connect(func(): presented.emit())
 	playback.event_started.connect(func(event: Dictionary): event_started.emit(event))
+	playback.event_presented.connect(func(event: Dictionary): event_presented.emit(event))
 	playback.settled.connect(_on_settled)
 	playback.recovered.connect(func(reason: String): playback_recovered.emit(reason))
 
