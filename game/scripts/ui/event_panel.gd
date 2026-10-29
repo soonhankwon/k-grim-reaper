@@ -55,13 +55,19 @@ func refresh(view: Dictionary, busy: bool) -> void:
 	heading.text = entry.title if view.phase == "event" else "기억의 응답"
 	if view.phase == "event":
 		description.text = entry.description
-		take.text = entry.take_label + (" · 보관대에서 보따리에 넣어 확정" if view.event.selected == "take" else " · 보따리 공간 필요")
+		if EventRules.resolution(view).get("allow_stash", false):
+			take.text = entry.take_label + (" · 보관대에 있음" if view.event.selected == "take" else " · 보관대에 놓기")
+		else:
+			take.text = entry.take_label + (" · 보관대에서 보따리에 넣어 확정" if view.event.selected == "take" else " · 보따리 공간 필요")
 		leave.text = entry.leave_label
 		take.visible = true
 		leave.visible = true
 		take.disabled = busy or view.event.selected == "take"
 		leave.disabled = busy
 	else:
-		description.text = entry.take_result + "  ·  체력 %d / %d (최대 %d 회복)" % [view.health, view.config.max_health, entry.heal_amount] if view.event.outcome == "take" else entry.leave_result
+		if view.event.get("method", "") == "resolution":
+			description.text = str(EventRules.resolution(view).result)
+		else:
+			description.text = entry.take_result + "  ·  체력 %d / %d (최대 %d 회복)" % [view.health, view.config.max_health, entry.heal_amount] if view.event.outcome == "take" else entry.leave_result
 		take.hide()
 		leave.hide()

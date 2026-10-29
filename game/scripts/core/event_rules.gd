@@ -8,6 +8,12 @@ static func definition(state: Dictionary) -> Dictionary:
 		if entry.id == id: return entry
 	return {}
 
+static func resolution(state: Dictionary) -> Dictionary:
+	var id: String = state.get("event", {}).get("id", "")
+	for entry: Dictionary in state.config.get("resolutions", []):
+		if entry.event_id == id: return entry
+	return {}
+
 static func due(state: Dictionary) -> Dictionary:
 	if not state.get("event", {}).is_empty(): return {}
 	for entry: Dictionary in state.config.get("events", []):
@@ -30,7 +36,7 @@ static func resolve(before: Dictionary, request: Dictionary) -> CombatResolution
 			if state.phase != "event" or event.status != "pending" or not event.selected.is_empty(): return _reject(before, "지금은 유품을 선택할 수 없습니다.")
 			event.selected = "take"
 			state.inventory_items[event.uid] = {"definition": entry.item_id, "origin": Vector2i(-1,-1), "rotation": 0}
-			message = "유품을 보관대에 두었습니다. 보따리에 넣은 뒤 확정하세요."
+			message = "유품을 보관대에 두었습니다. 보관대에 둔 채 확정할 수 있습니다." if resolution(state).get("allow_stash", false) else "유품을 보관대에 두었습니다. 보따리에 넣은 뒤 확정하세요."
 		"event_leave":
 			if state.phase != "event" or event.status != "pending": return _reject(before, "지금은 이 사건을 선택할 수 없습니다.")
 			state.inventory_items.erase(event.uid)
@@ -40,13 +46,17 @@ static func resolve(before: Dictionary, request: Dictionary) -> CombatResolution
 			state.phase = "route"
 			message = "유품을 두고 갈림길로 향합니다."
 		"event_confirm":
-			if state.phase != "event" or event.status != "pending" or event.selected != "take" or not state.packed_items.has(event.uid): return _reject(before, "유품을 보따리에 넣은 뒤 확정하세요.")
+			var allow_stash: bool = resolution(state).get("allow_stash", false)
+			if state.phase != "event" or event.status != "pending" or event.selected != "take" or (not allow_stash and not state.packed_items.has(event.uid)): return _reject(before, "유품을 보따리에 넣은 뒤 확정하세요.")
 			event.status = "carried"
 			state.phase = "route"
 			message = "유품을 챙겼습니다. 다음 길을 고르세요."
 		"event_continue":
 			if state.phase != "event_result" or event.status != "resolved": return _reject(before, "지금은 사건을 이어갈 수 없습니다.")
-			state.phase = "reward" if not state.reward.is_empty() else "victory"
+			if not resolution(state).is_empty():
+				state.reward = {}
+				state.phase = "complete"
+			else: state.phase = "reward" if not state.reward.is_empty() else "victory"
 			message = "사건을 마치고 길을 이어갑니다."
 		_: return _reject(before, "알 수 없는 사건 선택입니다.")
 	state.messages.append(message)

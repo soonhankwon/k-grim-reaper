@@ -23,6 +23,7 @@ func _run() -> void:
 
 func _test_content_and_placement() -> void:
 	var shipping := ContentLoader.new().load_json(ItemCatalog.DEFAULT_PATH)
+	var original_content := ContentLoader.new().load_json("res://tests/fixtures/catalog-v0.13.json")
 	var fixture := ContentLoader.new().load_json(Experiment.CONTENT_PATH)
 	check(shipping.error.is_empty() and fixture.error.is_empty(), "shipping and experimental data validate")
 	if not fixture.error.is_empty() or not shipping.error.is_empty(): return
@@ -30,7 +31,7 @@ func _test_content_and_placement() -> void:
 	for table in ["items", "loadout"]:
 		original[table] = original[table].filter(func(row): return row.id != TEST_ID)
 	original.effects = original.effects.filter(func(row): return row.id != "test_greatsword_hit")
-	check(original == shipping.raw, "experiment only adds its test item, effect and loadout instance")
+	check(original_content.error.is_empty() and original == original_content.raw, "experiment only adds its test item, effect and loadout instance to its fixed source")
 	check(shipping.raw.items.size() == 12 and shipping.raw.encounters.size() == 3 and fixture.raw.items.size() == 13, "test item does not change release counts")
 	var model := ItemCatalog.from_validated(fixture.raw)
 	check(model.items.size() == 8 and not model.is_packed(TEST_ID), "experimental weapon starts separately in the stash")

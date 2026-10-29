@@ -47,12 +47,14 @@ func refresh(view: Dictionary, busy: bool, blocked: bool) -> void:
 	match view.phase:
 		"packing":
 			heading.text = "보따리 준비"
-			body.text = "물건을 끌거나 선택한 뒤 빈칸을 눌러 배치하세요.\n\n상하좌우로 닿은 물건의 효과가 달라질 수 있습니다."
+			body.text = "물건을 끌거나 선택한 뒤 빈칸을 눌러 배치하세요.\n\n물건마다 표시된 범위에 따라 효과가 달라질 수 있습니다."
 			footer.text = "R 회전 · Ctrl+Z 되돌리기\n물건에 마우스를 올려 효과 확인"
 		"battle":
 			heading.text = "전투 중"
 			body.text = "보따리의 물건을 눌러 사용하세요. 기력과 턴당 사용 횟수를 확인하세요.\n\n적의 다음 행동을 보고 턴을 끝내세요."
 			footer.text = "배치는 전투가 끝난 뒤 바꿀 수 있습니다."
+			if not EventRules.resolution(view).is_empty() and view.get("event", {}).get("status", "") in ["carried", "left"]:
+				footer.text = "유품을 보따리에 가지고 있다면 오른쪽 버튼으로 이야기를 들을 수 있습니다."
 		"reward":
 			heading.text = "보상과 정리"
 			if view.reward.selected.is_empty():
@@ -66,12 +68,12 @@ func refresh(view: Dictionary, busy: bool, blocked: bool) -> void:
 			footer.text = "보따리에 넣은 물건은 다음 전투에서 사용할 수 있습니다."
 		"event":
 			heading.text = "길가의 선택"
-			body.text = "유품을 챙기려면 보따리에 넣고 확정하세요. 그 자리에 둘 수도 있습니다."
+			body.text = "유품은 보관대에 둔 채로 챙길 수 있습니다. 그 자리에 둘 수도 있습니다." if EventRules.resolution(view).get("allow_stash", false) else "유품을 챙기려면 보따리에 넣고 확정하세요. 그 자리에 둘 수도 있습니다."
 			footer.text = "다음 만남에서 보따리에 넣고 있어야 유품을 보여 줄 수 있습니다."
 		"event_result":
 			heading.text = "선택의 결과"
 			body.text = "이번 선택의 결과를 확인하고 사건을 마치세요."
-			footer.text = "이후 보상을 받고 길을 이어갑니다."
+			footer.text = "사건을 마치면 이번 인도가 끝납니다." if not EventRules.resolution(view).is_empty() else "이후 보상을 받고 길을 이어갑니다."
 		"route":
 			heading.text = "갈림길"
 			body.text = "아래 두 길의 다음 적과 첫 행동을 비교하세요.\n\n원하는 길을 누르면 다음 길목으로 이동합니다."
@@ -82,6 +84,6 @@ func refresh(view: Dictionary, busy: bool, blocked: bool) -> void:
 			footer.text = "오른쪽 버튼으로 새 인도를 시작합니다."
 		"complete":
 			heading.text = "인도 완료"
-			body.text = "세 길목을 통과했습니다. 다른 배치나 경로로 다시 연습해 보세요."
+			body.text = "이번 인도를 마쳤습니다. 다른 배치나 경로로 다시 도전해 보세요." if not EventRules.resolution(view).is_empty() else "세 길목을 통과했습니다. 다른 배치나 경로로 다시 연습해 보세요."
 			footer.text = "오른쪽 버튼으로 새 인도를 시작합니다."
 	if busy: footer.text = "행동 결과를 재생 중입니다. 건너뛰기를 사용할 수 있습니다."

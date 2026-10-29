@@ -56,7 +56,23 @@ func _resolve_request(request: Dictionary) -> void:
 		"end_turn": _end_turn()
 		"advance": _advance()
 		"choose_route": _choose_route(str(request.get("route_id", "")))
+		"resolve_encounter": _resolve_encounter()
 		_: _failure = "알 수 없는 전투 명령입니다."
+
+func _resolve_encounter() -> void:
+	var rules := EventRules.resolution(_state)
+	var event: Dictionary = _state.get("event", {})
+	var entry := EventRules.definition(_state)
+	if rules.is_empty() or _state.phase != "battle" or entry.is_empty() or event.get("status", "") != "carried" or RouteRules.step(_state) != int(entry.step) + 1 or not _state.packed_items.has(event.get("uid", "")):
+		_failure = "지금은 증거를 보여 줄 수 없습니다."
+		return
+	_state.enemy_health = 0
+	_state.enemy_guard = 0
+	_state.phase = "event_result"
+	event.status = "resolved"
+	event.outcome = "take"
+	event.method = "resolution"
+	_record("encounter_resolved", str(rules.message), {"source": event.uid})
 
 func _start() -> void:
 	if _state.phase != "packing":
@@ -104,7 +120,7 @@ func _end_turn() -> void:
 	var plans: Array[Dictionary] = []
 	for uid: String in _state.packed_items:
 		for plan in EffectApplier.plan(_state.packed_items, uid, "turn_end"):
-			if plan.amount > 0 or plan.kind == "set_guard": plans.append(plan)
+			if not plan.error.is_empty() or plan.amount > 0 or plan.kind == "set_guard": plans.append(plan)
 	plans.sort_custom(_plan_precedes)
 	_pending.append_array(plans)
 	_pending.append(EffectApplier.actor_plan(intent(_state), "enemy", enemy(_state).name))
@@ -166,6 +182,11 @@ func _prepare_encounter(message: String) -> void:
 func _drain_effects() -> void:
 	while not _pending.is_empty():
 		var effect: Dictionary = _pending.pop_front()
+		if not str(effect.get("error", "")).is_empty():
+			var hp_key := "health" if effect.target == "player" else "enemy_health"
+			if int(_state[hp_key]) <= 0: continue
+			_failure = effect.error
+			return
 		_processed += 1
 		if _processed > MAX_EFFECTS or int(effect.get("depth", 0)) > MAX_DEPTH:
 			_failure = "연쇄 효과 한도를 초과했습니다. 이번 행동을 적용하지 않았습니다."
@@ -174,6 +195,10 @@ func _drain_effects() -> void:
 		for bonus: Dictionary in effect.get("bonuses", []):
 			cause = _record("adjacency_bonus", "%s → %s +%d" % [bonus.name, effect.label, bonus.amount],
 				{"source": bonus.source, "target": effect.source, "effect_id": bonus.effect_id, "amount": bonus.amount, "cause_id": cause})
+			if not _failure.is_empty(): return
+		for multiplier: Dictionary in effect.get("multipliers", []):
+			cause = _record("power_multiplier", "%s → %s ×%d" % [multiplier.name, effect.label, multiplier.factor],
+				{"source": multiplier.source, "target": effect.source, "effect_id": multiplier.effect_id, "factor": multiplier.factor, "cause_id": cause})
 			if not _failure.is_empty(): return
 		effect.cause_id = cause
 		_apply_effect(effect)
@@ -214,7 +239,7 @@ func _enqueue_reactions(damaged_owner: String, cause: int, depth: int) -> void:
 	for plan in plans:
 		var count: int = _trigger_counts.get(plan.trigger_key, 0)
 		if count >= int(plan.max_per_action): continue
-		if plan.amount <= 0 and plan.kind != "set_guard": continue
+		if str(plan.get("error", "")).is_empty() and plan.amount <= 0 and plan.kind != "set_guard": continue
 		_trigger_counts[plan.trigger_key] = count + 1
 		plan.cause_id = cause
 		plan.depth = depth

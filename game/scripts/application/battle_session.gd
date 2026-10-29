@@ -111,6 +111,12 @@ func use_error(uid: String) -> String:
 func display_snapshot() -> Dictionary:
 	return playback.snapshot()
 
+func preview_end_turn() -> CombatResolution:
+	# Preview is based exclusively on the displayed state and never commits or saves.
+	var view := display_snapshot()
+	if is_busy(): return CombatResolution.new(view, view, [], "연출이 끝난 뒤 확인할 수 있습니다.")
+	return CombatSimulator.resolve(view, {"type": "end_turn"})
+
 func state_snapshot() -> Dictionary:
 	# For persistence/debug/tests only; rendering must use display_snapshot().
 	return _resolver.snapshot()

@@ -29,6 +29,11 @@ run_suite tests/content_tests.gd content-tests.log 'CONTENT TESTS:'
 python3 "$PROJECT_ROOT/scripts/check-content-import.py" "$GODOT_BIN"
 run_suite tests/test_runner.gd tests.log 'RULE TESTS:'
 run_suite tests/cascade_tests.gd cascade-tests.log 'CASCADE TESTS:'
+run_suite tests/turn_preview_tests.gd turn-preview-tests.log 'TURN PREVIEW TESTS:'
+run_suite tests/diagonal_tests.gd diagonal-tests.log 'DIAGONAL TESTS:'
+run_suite tests/multiplier_tests.gd multiplier-tests.log 'MULTIPLIER TESTS:'
+run_suite tests/synergy_tests.gd synergy-tests.log 'SYNERGY TESTS:'
+run_suite tests/art_atlas_tests.gd art-atlas-tests.log 'ART ATLAS TESTS:'
 run_suite tests/playback_tests.gd playback-tests.log 'PLAYBACK TESTS:'
 run_suite tests/feedback_tests.gd feedback-tests.log 'FEEDBACK TESTS:'
 run_suite tests/space_experiment_tests.gd space-experiment-tests.log 'SPACE EXPERIMENT TESTS:'
@@ -36,6 +41,9 @@ run_suite tests/reward_tests.gd reward-tests.log 'REWARD TESTS:'
 run_suite tests/save_tests.gd save-tests.log 'SAVE TESTS:'
 run_suite tests/route_tests.gd route-tests.log 'ROUTE TESTS:'
 run_suite tests/event_tests.gd event-tests.log 'EVENT TESTS:'
+run_suite tests/arang_experiment_tests.gd arang-experiment-tests.log 'ARANG EXPERIMENT TESTS:'
+run_suite tests/resolution_save_tests.gd resolution-save-tests.log 'RESOLUTION SAVE TESTS:'
+run_suite tests/stage_one_ui_tests.gd stage-one-ui-tests.log 'STAGE ONE UI:'
 mkdir -p "$PROJECT_ROOT/build/save-process"
 PROCESS_DIR="$(mktemp -d "$PROJECT_ROOT/build/save-process/run.XXXXXXXX")"
 PROCESS_SLOT="$PROCESS_DIR/run.json"

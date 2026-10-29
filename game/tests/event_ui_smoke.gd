@@ -12,6 +12,7 @@ func _initialize() -> void:
 
 func make_main() -> Control:
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	main.content_path = "res://tests/fixtures/catalog-v0.13.json"
 	main.save_path = slot
 	root.add_child(main)
 	return main

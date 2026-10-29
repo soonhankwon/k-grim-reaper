@@ -58,16 +58,24 @@ func clear_feedback() -> void:
 	feedback_progress = 0.0
 	queue_redraw()
 
-func _actor(visual: Dictionary, origin: Vector2, faded := false, tint := Color.WHITE) -> void:
-	var sprite := PresentationArt.actor_region(str(visual.get("presentation_id", "")))
+func _actor(visual: Dictionary, origin: Vector2, faded := false, tint := Color.WHITE, mirrored := false) -> void:
+	# The current atlas faces left. The left-side actor faces the opponent by mirroring.
+	var box := Vector2(150, 132)
+	var visual_id := str(visual.get("presentation_id", ""))
+	var sprite := PresentationArt.actor_region(visual_id)
+	var texture := PresentationArt.actor_texture(visual_id)
 	if sprite.has_area():
-		var box := Vector2(150, 132)
 		var fit := minf(box.x / sprite.size.x, box.y / sprite.size.y)
 		var sprite_size := sprite.size * fit
 		var color := Color(0.45, 0.45, 0.45) * tint if faded else tint
-		draw_texture_rect_region(PresentationArt.ACTORS, Rect2(origin + Vector2((box.x - sprite_size.x) / 2, box.y - sprite_size.y), sprite_size), sprite, color)
+		if mirrored:
+			draw_set_transform(origin + Vector2(box.x, 0), 0, Vector2(-1, 1))
+			draw_texture_rect_region(texture, Rect2(Vector2((box.x - sprite_size.x) / 2, box.y - sprite_size.y), sprite_size), sprite, color)
+			draw_set_transform(Vector2.ZERO)
+		else:
+			draw_texture_rect_region(texture, Rect2(origin + Vector2((box.x - sprite_size.x) / 2, box.y - sprite_size.y), sprite_size), sprite, color)
 		return
-	draw_set_transform(origin, 0, Vector2.ONE * 4)
+	draw_set_transform(origin + Vector2(box.x if mirrored else 0, 0), 0, Vector2(-4 if mirrored else 4, 4))
 	for part: Array in visual.get("parts", []):
 		var color := Color(part[4])
 		draw_rect(Rect2(part[0], part[1], part[2], part[3]), (color.darkened(0.55) if faded else color) * tint)
@@ -99,7 +107,7 @@ func _draw() -> void:
 		else:
 			enemy_offset = offset
 			enemy_tint = tint
-	_actor(player_visual, Vector2(176, 58) + player_offset, false, player_tint)
+	_actor(player_visual, Vector2(176, 58) + player_offset, false, player_tint, true)
 	_actor(enemy_visual, Vector2(866, 62) + enemy_offset, defeated, enemy_tint)
 	if feedback_impact and not feedback_text.is_empty() and feedback_target in ["player", "enemy"]:
 		var anchor := Vector2(192, 92) if feedback_target == "player" else Vector2(882, 96)

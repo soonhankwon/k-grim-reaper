@@ -13,7 +13,14 @@ static func cells(footprint: Array[Vector2i], rotation := 0) -> Array[Vector2i]:
 	return result
 
 static func adjacent(first: Dictionary, second: Dictionary) -> bool:
+	return in_range(first, second, "orthogonal")
+
+static func in_range(first: Dictionary, second: Dictionary, mode: String) -> bool:
 	for a: Vector2i in first.cells:
 		for b: Vector2i in second.cells:
-			if absi(a.x - b.x) + absi(a.y - b.y) == 1: return true
+			var dx := absi(a.x - b.x)
+			var dy := absi(a.y - b.y)
+			var orthogonal := dx + dy == 1
+			var diagonal := dx == 1 and dy == 1
+			if (mode == "orthogonal" and orthogonal) or (mode == "diagonal" and diagonal) or (mode == "neighbor" and (orthogonal or diagonal)): return true
 	return false

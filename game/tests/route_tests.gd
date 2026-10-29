@@ -106,7 +106,7 @@ func _test_migration() -> void:
 	old_raw.events = []
 	old_raw.routes = []
 	var old_model := make_model(old_raw)
-	var new_model := ItemCatalog.create_inventory()
+	var new_model := ItemCatalog.create_inventory("res://tests/fixtures/catalog-v0.13.json")
 	check(new_model != null and old_model.legacy_content_hash == new_model.legacy_content_hash, "new route catalog recognizes the actual 0.6 content")
 	if new_model == null: return
 	old_model.content_hash = old_model.legacy_content_hash

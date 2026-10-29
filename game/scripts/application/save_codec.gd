@@ -2,7 +2,7 @@ class_name SaveCodec
 extends RefCounted
 ## Versioned, checked value format. Never trusts saved Resources or configuration.
 
-const VERSION := 3
+const VERSION := 4
 const STATE_FIELDS := ["phase", "encounter", "health", "energy", "guard", "enemy_health", "enemy_guard", "turn", "used", "messages", "reward", "reactions", "route", "event"]
 const MAX_NUMBER := 9007199254740991
 var error := ""
@@ -40,6 +40,7 @@ func decode(text: String, model: InventoryModel) -> Dictionary:
 		return _fail("저장 파일의 버전 정보가 없습니다.")
 	if int(doc.version) == 1: return _migrate_v1(doc, model)
 	if int(doc.version) == 2: return _migrate_v2(doc, model)
+	if int(doc.version) == 3: return _migrate_v3(doc, model)
 	if int(doc.version) != VERSION:
 		return {"status": "incompatible", "error": "지원하지 않는 저장 버전입니다. 기존 파일을 보존했습니다."}
 	if doc.content_hash != model.content_hash:
@@ -65,7 +66,6 @@ func decode(text: String, model: InventoryModel) -> Dictionary:
 	if (state.phase == "defeat") != (state.health == 0): return _fail("단계와 플레이어 체력이 일치하지 않습니다.")
 	if state.phase in ["reward", "victory", "route", "event", "event_result", "complete"] and state.enemy_health != 0: return _fail("승리 상태의 적 체력이 올바르지 않습니다.")
 	if state.phase in ["packing", "battle"] and state.enemy_health == 0: return _fail("진행 중인 전투의 적 체력이 올바르지 않습니다.")
-	if state.phase == "complete" and not RouteRules.last(state): return _fail("완료 길목이 올바르지 않습니다.")
 	if not state.used is Dictionary or state.used.size() > 10000: return _fail("사용 횟수 형식이 올바르지 않습니다.")
 	for uid: Variant in state.used:
 		if not uid is String or uid.is_empty() or uid.length() > 128 or not _int_ok(state.used[uid], 1, 128): return _fail("사용 횟수 항목이 올바르지 않습니다.")
@@ -77,6 +77,9 @@ func decode(text: String, model: InventoryModel) -> Dictionary:
 	var initial_items := model.authored_items
 	var event_error := _validate_event(state)
 	if not event_error.is_empty(): return _fail(event_error)
+	if state.phase == "complete" and not RouteRules.last(state):
+		var entry := EventRules.definition(state)
+		if EventRules.resolution(state).is_empty() or entry.is_empty() or state.event.get("status", "") != "resolved" or RouteRules.step(state) != int(entry.step) + 1: return _fail("완료 길목이 올바르지 않습니다.")
 	var allowed_rewards := _allowed_rewards(state)
 	if not state.event.is_empty() and state.event.selected == "take":
 		var entry := EventRules.definition(state)
@@ -96,7 +99,8 @@ func decode(text: String, model: InventoryModel) -> Dictionary:
 	if not state.event.is_empty():
 		var has_item: bool = current.has(state.event.uid)
 		if has_item != (state.event.selected == "take"): return _fail("사건 유품과 선택이 일치하지 않습니다.")
-		if state.event.status == "carried" and state.phase == "route" and current[state.event.uid].origin == InventoryModel.STASH: return _fail("확정한 유품을 보따리에 넣어야 합니다.")
+		if state.event.status == "carried" and state.phase == "route" and current[state.event.uid].origin == InventoryModel.STASH and not EventRules.resolution(state).get("allow_stash", false): return _fail("확정한 유품을 보따리에 넣어야 합니다.")
+		if state.event.get("method", "") == "resolution" and (not has_item or current[state.event.uid].origin == InventoryModel.STASH): return _fail("결말에 필요한 유품이 보따리에 없습니다.")
 	var reward_error := _validate_reward(state, current, config)
 	if not reward_error.is_empty(): return _fail(reward_error)
 	state.inventory_items = current
@@ -156,6 +160,7 @@ func _validate_reward(state: Dictionary, items: Dictionary, config: Dictionary) 
 	if not state.reward is Dictionary: return "보상 상태 형식이 올바르지 않습니다."
 	var offer := RouteRules.offer(state)
 	var expects: bool = state.phase in ["reward", "victory", "event_result"] and not offer.is_empty()
+	if state.phase == "event_result" and state.event.get("method", "") == "resolution": expects = false
 	if not expects:
 		return "현재 단계에 보상 정보가 남아 있습니다." if not state.reward.is_empty() else ""
 	var reward: Dictionary = state.reward
@@ -191,6 +196,7 @@ func _allowed_rewards(state: Dictionary) -> Dictionary:
 	if RouteRules.enabled(state):
 		var route := RouteRules.current(state)
 		var last: int = state.route.step if state.phase in ["reward", "victory", "route", "event", "event_result"] else state.route.step - 1
+		if state.phase == "event_result" and state.event.get("method", "") == "resolution": last -= 1
 		for i in range(mini(last + 1, route.rewards.size())):
 			var offer: Dictionary = state.config.reward_definitions[route.rewards[i]]
 			result["reward/" + str(offer.id)] = offer.item_ids
@@ -205,11 +211,15 @@ func _validate_event(state: Dictionary) -> String:
 	if not state.event is Dictionary: return "사건 상태 형식이 올바르지 않습니다."
 	if state.event.is_empty(): return "현재 단계에 사건이 없습니다." if state.phase in ["event", "event_result"] else ""
 	var event: Dictionary = state.event
+	for key: Variant in event:
+		if key not in ["id", "uid", "selected", "status", "outcome", "method"]: return "알 수 없는 사건 상태 필드입니다."
 	for field in ["id", "uid", "selected", "status", "outcome"]:
 		if not event.get(field) is String: return "사건 상태 필드가 올바르지 않습니다."
 	var entry := EventRules.definition(state)
 	if entry.is_empty() or event.uid != "event/" + str(entry.id): return "사건 참조가 올바르지 않습니다."
 	var step := RouteRules.step(state)
+	if event.has("method"):
+		if event.method != "resolution" or EventRules.resolution(state).is_empty() or event.status != "resolved" or event.selected != "take" or event.outcome != "take" or step != int(entry.step) + 1 or state.phase not in ["event_result", "complete"]: return "결말 방식이 사건 상태와 일치하지 않습니다."
 	if event.status == "pending":
 		if state.phase != "event" or step != entry.step or event.selected not in ["", "take"] or not event.outcome.is_empty(): return "사건 선택 단계가 올바르지 않습니다."
 	elif event.status in ["carried", "left"]:
@@ -220,6 +230,16 @@ func _validate_event(state: Dictionary) -> String:
 		if step < entry.step + 1 or state.phase == "event" or (state.phase == "event_result" and step != entry.step + 1): return "사건 후속 길목이 올바르지 않습니다."
 	else: return "사건 처리 상태가 올바르지 않습니다."
 	return ""
+
+func _migrate_v3(doc: Dictionary, model: InventoryModel) -> Dictionary:
+	if doc.content_hash != model.content_hash:
+		return {"status":"incompatible", "error":"기존 저장의 콘텐츠가 현재 데이터와 달라 이전할 수 없습니다. 기존 파일을 보존했습니다."}
+	if not doc.get("state") is Dictionary or not doc.state.get("event") is Dictionary or doc.state.event.has("method"): return _fail("이전 저장의 사건 상태가 올바르지 않습니다.")
+	var migrated := doc.duplicate(true)
+	migrated.version = VERSION
+	var result := SaveCodec.new().decode(_wrap(migrated), model)
+	if result.status == "ok": result.migrated = true
+	return result
 
 func _migrate_v2(doc: Dictionary, model: InventoryModel) -> Dictionary:
 	if doc.content_hash != model.previous_content_hash:

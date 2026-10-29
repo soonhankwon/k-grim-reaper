@@ -57,7 +57,8 @@
           "guard",
           "heal",
           "set_guard",
-          "modify_power"
+          "modify_power",
+          "multiply_power"
         ]
       },
       "target": {
@@ -65,7 +66,9 @@
         "values": [
           "self",
           "opponent",
-          "adjacent_items"
+          "adjacent_items",
+          "diagonal_items",
+          "neighbor_items"
         ]
       },
       "amount": {
@@ -83,7 +86,9 @@
         "type": "enum",
         "values": [
           "flat",
-          "per_adjacent"
+          "per_adjacent",
+          "per_diagonal",
+          "per_neighbor"
         ]
       },
       "max_matches": {
@@ -268,6 +273,32 @@
         "type": "int",
         "min": 0,
         "max": 1000000
+      }
+    },
+    "resolutions": {
+      "id": {
+        "type": "id"
+      },
+      "event_id": {
+        "type": "id"
+      },
+      "allow_stash": {
+        "type": "bool"
+      },
+      "message": {
+        "type": "text"
+      },
+      "result": {
+        "type": "text"
+      },
+      "button": {
+        "type": "text"
+      },
+      "unavailable": {
+        "type": "text"
+      },
+      "completion_title": {
+        "type": "text"
       }
     }
   }

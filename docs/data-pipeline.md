@@ -20,9 +20,9 @@ flowchart TD
 ## 기획 작업 순서
 
 1. `outputs/data-driven-content/balance-template.xlsx`를 Google Sheets로 가져온다. 이 파일은 로컬에서 수식·값·렌더링을 검증한 가져오기용 템플릿이다. Google 계정에 업로드하거나 원격 문서를 생성하지는 않았다.
-2. `effects`의 `_base_amount`와 `Balance`의 연산별 배율을 조정한다. `amount`는 반올림한 정수 수식 결과다. 배율은 아군과 적의 해당 연산 모두에 적용되며, `modify_power`는 `affects` 연산의 배율을 따른다. 필요하면 기획에 맞는 수식으로 교체해도 된다.
+2. `effects`의 `_base_amount`와 `Balance`의 연산별 배율을 조정한다. 일반 `amount`는 반올림한 정수 수식 결과다. 밸런스 배율은 아군과 적의 해당 연산 모두에 적용되며, `modify_power`는 `affects` 연산의 배율을 따른다. **`multiply_power`의 amount는 밸런스 배율을 적용하지 않은 정수 배수**다. 필요하면 기획에 맞는 수식으로 교체해도 된다.
 3. 아이템의 비용·횟수·형태·태그·효과 참조는 `items`에서 편집한다. 복합 효과는 `effect_ids`에 `a_hit|b_guard|c_heal`처럼 연결한다. 원수치 변경은 같은 효과 단위를 참조하는 모든 아이템에 반영된다. 별도 수치가 필요하면 효과 행을 복사하고 새 ID를 부여한다.
-4. `items`, `effects`, `tags`, `loadout`, `encounters`, `rules`, `rewards`, `routes`, `events` 탭을 각각 CSV로 다운로드해 `content/source/`의 동명 파일로 둔다. 헤더는 첫 행이다. `Balance`는 내보내지 않는다. `art.json`은 시각 자료이며 수치 변경 시 그대로 둔다.
+4. `items`, `effects`, `tags`, `loadout`, `encounters`, `rules`, `rewards`, `routes`, `events`, `resolutions` 탭을 각각 CSV로 다운로드해 `content/source/`의 동명 파일로 둔다. 헤더는 첫 행이다. `Balance`는 내보내지 않는다. `art.json`은 시각 자료이며 수치 변경 시 그대로 둔다.
 5. 저장소 루트에서 다음을 실행한다.
 
 ```bash
@@ -57,6 +57,7 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 | `rewards.csv` | 길목별 보상 후보 | `id`, `encounter_id`, `item_ids` (중복 없는 후보 1~3개) |
 | `routes.csv` | 갈림길 선택지 | `id`, `name`, `description`, 순서대로 연결한 `encounter_ids`, `reward_ids` |
 | `events.csv` | 첫 보상 뒤 유품 사건 | `id`, `step`, 문구·유품 `item_id`·선택 문구·후속 반응·`heal_amount` |
+| `resolutions.csv` | 사건 후 별도 결말 설정 (없으면 헤더만) | `id`, `event_id`, `allow_stash`, `message`, `result`, `button`, `unavailable`, `completion_title` |
 | `rules.csv` | 런 기본 규칙 한 행 | 격자 크기, 최대 체력, 턴 기력, 승리 회복, 플레이어 시각 자료 참조 |
 | `art.json` | 시각 자료 | 공통 팔레트, 아이콘·캐릭터 사각형 데이터. ID로 참조 |
 | `schema.json` | 엔진이 지원하는 계약 | 열·자료형·열거값·범위. 새 동작을 추가할 때 개발자가 변경 |
@@ -98,21 +99,31 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 |---|---|
 | `id` | 효과 단위 ID. 아이템/적이 참조 |
 | `trigger` | `use`, `turn_end`, `damage_taken`, `modify` |
-| `operation` | `damage`, `guard`, `heal`, `set_guard`, `modify_power` |
-| `target` | `self`, `opponent`; 수정 효과에 한해 `adjacent_items` |
-| `amount` | 0~100000 정수. 효과의 기본 수치 |
+| `operation` | `damage`, `guard`, `heal`, `set_guard`, `modify_power`, `multiply_power` |
+| `target` | 실행 효과는 `self`, `opponent`; 수정 효과는 `self`, `adjacent_items`, `diagonal_items`, `neighbor_items` |
+| `amount` | 일반 효과는 0~100000 정수, `multiply_power`는 1~100000 정수 배수. 2는 2배 |
 | `required_tags` | 수정 효과를 받는 물건에 모두 있어야 하는 태그 |
 | `condition_tags` | 수치를 계산할 때 세는 인접 물건의 태그. 모두 일치해야 함 |
-| `scale` | `flat` 또는 `per_adjacent` |
-| `max_matches` | `per_adjacent`에서 셀 수 있는 인접 물건 수의 상한. 1~64 |
-| `affects` | `modify_power`가 수정할 실행 연산. 그 외에는 빈 문자열 |
-| `stack_group` | 같은 수정을 한 번만 적용할 그룹. 빈 문자열은 출처별로 더함 |
+| `scale` | `flat`, `per_adjacent`, `per_diagonal`, `per_neighbor` |
+| `max_matches` | 범위별 물건 수로 수치를 계산할 때 세는 상한. 1~64 |
+| `affects` | `modify_power` / `multiply_power`가 수정할 실행 연산. 그 외에는 빈 문자열 |
+| `stack_group` | 같은 연산의 같은 그룹에서 하나만 적용. 빈 문자열은 각각 적용 |
 | `max_per_action` | 피해 반응이 한 루트 요청에서 발동할 상한. 1~128 |
 | `priority` | 작은 숫자부터 처리. -1000~1000 |
 
-`per_adjacent`는 **출처 물건**과 상하좌우로 닿는 다른 물건을 센다. 같은 물건과 여러 칸이 닿아도 한 번이다. 결과는 `amount × min(일치 물건 수, max_matches)`다. `condition_tags`가 비었으면 모든 인접 물건을 센다. 조건 태그를 쓰려면 `per_adjacent`를 지정한다.
+범위는 `adjacent_items` / `per_adjacent`가 상하좌우, `diagonal_items` / `per_diagonal`이 대각선, `neighbor_items` / `per_neighbor`가 둘의 합집합이다. 모든 범위는 점유 칸 쌍 중 하나가 조건에 맞으면 충족한다. 다칸 물건이 양쪽 범위에 함께 닿거나 여러 칸이 닿아도 수신·계수 대상 인스턴스당 한 번이며 자기 자신은 제외한다. 회전 후 실제 점유 칸으로 검사하므로 대각선 범위는 별도 방향 설정이 필요 없다.
+
+`target`은 수정 효과를 **받는 물건**의 범위이고, `scale`은 수치를 구하기 위해 **출처 물건 주위에서 세는 물건**의 범위다. 독립적으로 지정할 수 있다. `per_*`의 결과는 `amount × min(조건에 맞는 물건 수, max_matches)`다. `condition_tags`가 비었으면 범위 안의 모든 다른 물건을 센다. 조건 태그를 쓰려면 `per_*`를 지정한다. 예를 들어 `modify,modify_power,diagonal_items,2,...,flat,...,damage`는 대각선 무기의 공격을 +2 하고, `turn_end,guard,self,4,...,per_diagonal`은 대각선 조건 물건마다 방어 4를 준다. `required_tags`와 `affects`는 기존 규칙대로 각각 수신 태그와 수정할 연산을 지정한다.
+
+이번 확장은 기존 필드를 추가하지 않고 스키마 4의 허용 값만 넓혔다. 기존 CSV·카탈로그·저장 해시는 바뀌지 않는다. 새 값을 사용한 콘텐츠는 이전 엔진이 거절할 수 있으므로 업데이트된 엔진과 함께 배포해야 한다. 새 값을 콘텐츠에 실제 반영하면 기존과 마찬가지로 콘텐츠 해시가 달라진다. 템플릿의 `effects` 탭 `target`·`scale` 드롭다운에도 새 값을 추가했다. Google Sheets에서 가져오기·재계산은 별도 확인이 필요하다.
 
 수정 효과는 수신 물건의 해당 연산에 적용한다. 발동 시점과 무관하게 같은 연산에 적용되므로 피해 반응의 `damage`도 조건을 만족하면 수정된다. 영구 능력치를 바꾸지 않는다. 그룹이 같으면 우선순위 → 출처 인스턴스 ID → 효과 ID 순서에서 처음 유효한 하나가 이긴다. 자동으로 가장 큰 수치를 고르지는 않는다. 각 실행 효과마다 별도로 계산한다.
+
+`multiply_power`는 `trigger=modify`, `scale=flat`, `condition_tags` 공란, `amount=1` 이상을 사용한다. `target`과 `required_tags`로 적용 대상을 지정하고 `affects`로 공격·방어·회복·방어 설정 중 하나를 고른다. 각 효과 수치는 **기본값 + 적용되는 고정 증가 전부 → 배율을 우선순위·출처·효과 ID 순서로 각각 곱하기** 순서다. 정수 곱셈이므로 반올림은 없다. 같은 비어 있지 않은 그룹이라도 덧셈과 곱셈은 각각 하나씩 선택하며, 서로 다른 곱셈 그룹과 빈 그룹은 곱연산으로 중첩한다. 예를 들어 기본 공격 6, 고정 +2, 배율 2는 `(6 + 2) × 2 = 16`이다.
+
+계산 결과와 저장 가능한 방어 수치의 정확한 정수 상한은 `9,007,199,254,740,991`이다. 초과 가능성을 곱하기 전에 검사하고, 해당 효과가 실제로 실행돼야 한다면 비용·피해·이벤트를 포함한 요청 전체를 거절한다. 표시에서는 숫자 대신 오류를 보여 준다. 이는 JSON 저장에서 정확히 보존할 수 있는 범위에 대한 안전 경계이며 강한 빌드의 밸런스 제한을 뜻하지 않는다. 죽은 대상에게 적용되지 않는 반응은 기존 규칙대로 건너뛴다. 분수 배율과 조건 수에 따른 배율 변화는 아직 지원하지 않는다.
+
+기존 스키마 4의 열과 출시 카탈로그는 바꾸지 않고 허용 연산만 확장했다. 이전 런의 콘텐츠 해시는 유지되며, 새 배율을 실제 콘텐츠에 넣으면 기존 콘텐츠 불일치 정책이 적용된다. 새 연산은 이전 엔진에서 거절될 수 있으므로 새 콘텐츠와 함께 엔진을 배포한다. [배율 실험](multiplier-experiment.md)
 
 적 의도는 `use`/`flat`, 적 반응은 `damage_taken`/`flat` 단위를 참조한다. 적에게 보따리 인접 규칙을 적용하지 않는다. 여러 `intent_ids`는 턴마다 순환하는 의도 순서다.
 
@@ -131,6 +142,8 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 ## 판정과 재생
 
 `EffectApplier.plan()`이 조건·수치·수정 원인을 값으로 만들고, `evaluate()`가 상태 변경분을 반환한다. `CombatSimulator`가 자신의 복사본에만 적용하며 FIFO·원인 ID·승패를 소유한다. UI도 같은 계획 함수를 사용해 결과를 표시하므로 별도의 아이템별 계산이 없다.
+
+계획의 조건 일치 물건·범위와 실제 선택된 수정 출처는 [시너지 연결 표시](synergy-visualization.md)에도 사용된다. `max_matches`보다 많은 조건 일치는 상한을 명시하고 모두 표시하며 계산 수치를 중복 증가시키지 않는다. 조건의 표시만으로 피해 반응 등이 반드시 발동한다고 가정하지 않는다.
 
 같은 루트 안의 여러 효과는 우선순위와 효과 ID로 정렬해 큐에 넣는다. 반응은 현재 대기열 뒤에 붙는다. 예를 들어 사용 효과가 공격+방어라면 공격에서 나온 반사가 기존 대기 중인 방어 뒤에 재생될 수 있다. 콘텐츠 행 순서는 우선순위가 아니다.
 
@@ -152,3 +165,10 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 [Godot FileAccess](https://docs.godotengine.org/en/stable/classes/class_fileaccess.html): CSV 읽기와 export 시 원본 파일 포함 조건. JSON·스키마는 `export_presets.cfg`의 `*.json` 필터로 포함한다.
 
 [Google 문서 데이터 내보내기](https://support.google.com/docs/answer/9759608?hl=en): 작업한 문서 데이터를 다운로드하는 경로. 이 프로젝트는 계정 API나 실행 중 네트워크 동기화에 의존하지 않는다.
+
+
+## 사건 기반 결말 데이터
+
+`resolutions.csv`는 헤더가 필수이며, 기능을 사용하지 않으면 행을 비운다. JSON에서는 필드를 생략하거나 빈 배열로 둘 수 있다. 빈 표는 정규화 과정에서 제거하므로 기존 카탈로그 해시는 유지된다. 행이 있으면 단 하나의 사건을 `event_id`로 참조하고, 보관대 확정 허용 여부와 버튼·결말 문구를 지정한다. 결말은 사건 직후 길목에서만 가능하며, 사건 아이템을 보따리에 휴대한 상태에서 선택한다. 선택한 경로와 무관하게 그 대면 이후 스테이지가 끝나므로 다음 보상은 지급하지 않는다. 다중 사건·여러 결말·다른 위치나 추가 조건은 아직 지원하지 않는다.
+
+`resolutions`에 값이 생기거나 바뀌면 콘텐츠 해시가 바뀐다. 기존 저장과 데이터를 자동으로 혼합하지 않는다. Google Sheets 템플릿의 동명 탭은 현재 아랑 스테이지의 결말 행을 포함하며 다른 탭과 마찬가지로 CSV로 내려받는다. [아랑전설 1스테이지](arang-stage-one.md)가 이 구조를 사용한다.

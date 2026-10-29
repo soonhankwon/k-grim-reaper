@@ -1,5 +1,7 @@
 extends SceneTree
 
+const LEGACY_CATALOG := "res://tests/fixtures/catalog-v0.13.json"
+
 var checks := 0
 var failures := 0
 
@@ -16,6 +18,13 @@ func submit(session: BattleSession, request: Dictionary) -> String:
 	var error := session.submit(request)
 	if error.is_empty(): session.skip_playback()
 	return error
+
+func check_v3(session: BattleSession, model: InventoryModel, label: String) -> void:
+	var state := session.state_snapshot()
+	var doc: Dictionary = JSON.parse_string(JSON.parse_string(SaveCodec.encode(state, model, model.history)).payload)
+	doc.version = 3
+	var restored := SaveCodec.new().decode(SaveCodec._wrap(doc), model)
+	check(restored.status == "ok" and restored.get("migrated", false) and restored.state == state and restored.history == model.history, "v3 migration: " + label)
 
 func make_event(session: BattleSession, model: InventoryModel) -> void:
 	var state := CombatSimulator.initial_state(model.config)
@@ -35,7 +44,7 @@ func _run() -> void:
 	quit(1 if failures else 0)
 
 func _test_validation() -> void:
-	var original: Dictionary = ContentLoader.new().load_json(ItemCatalog.DEFAULT_PATH).raw
+	var original: Dictionary = ContentLoader.new().load_json(LEGACY_CATALOG).raw
 	for kind in ["missing_item", "consumable", "wrong_step", "duplicate", "empty_text"]:
 		var bad := original.duplicate(true)
 		match kind:
@@ -48,7 +57,7 @@ func _test_validation() -> void:
 
 func _test_migration() -> void:
 	var old: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/catalog-v0.9.json"))
-	var new_model := ItemCatalog.create_inventory()
+	var new_model := ItemCatalog.create_inventory(LEGACY_CATALOG)
 	old.schema_version = 4
 	old.events = []
 	var loaded := ContentLoader.new().validate(old)
@@ -100,7 +109,7 @@ func _test_choices() -> void:
 		var folder := ProjectSettings.globalize_path("res://../build/event-tests/%d/%s" % [OS.get_process_id(), variant])
 		DirAccess.make_dir_recursive_absolute(folder)
 		var slot := folder.path_join("run.json")
-		var model := ItemCatalog.create_inventory()
+		var model := ItemCatalog.create_inventory(LEGACY_CATALOG)
 		var service := SaveService.new(slot)
 		check(service.load_slot(model).status == "missing", "isolated event slot")
 		var session := BattleSession.new()
@@ -108,6 +117,7 @@ func _test_choices() -> void:
 		session.save_service = service
 		session.reset(model)
 		make_event(session, model)
+		check_v3(session, model, "event pending")
 		var event: Dictionary = session.display_snapshot().event
 		var id: String = event.id
 		var uid: String = event.uid
@@ -123,6 +133,7 @@ func _test_choices() -> void:
 		modified.store_string(original)
 		modified.close()
 		check(submit(session, {"type":"event_take", "event_id":id}).is_empty(), "stage one relic")
+		check_v3(session, model, "event item selected")
 		check(model.items.has(uid) and not model.is_packed(uid), "selected relic begins in stash")
 		check(not session.submit({"type":"event_confirm", "event_id":id}).is_empty(), "unpacked relic cannot be confirmed")
 		if variant == "leave":
@@ -131,10 +142,12 @@ func _test_choices() -> void:
 			check(session.stash("hat").is_empty() and session.place(uid, Vector2i(1,2), 0).is_empty(), "rearrange and pack relic")
 			check(submit(session, {"type":"event_confirm", "event_id":id}).is_empty() and model.is_packed(uid), "confirm requires two occupied cells")
 		check(session.display_snapshot().phase == "route", "choice advances once to route")
+		check_v3(session, model, "route selection")
 		before = session.state_snapshot()
 		check(not session.submit({"type":"event_leave", "event_id":id}).is_empty() and session.state_snapshot() == before, "late change is rejected")
 		var route: String = model.config.routes[1].id
 		check(submit(session, {"type":"choose_route", "route_id":route}).is_empty(), "second route can be chosen")
+		check_v3(session, model, "second encounter preparation")
 		if variant == "stashed": check(session.stash(uid).is_empty(), "player can put the relic away before the follow-up")
 		var state := session.display_snapshot()
 		state.phase = "battle"
@@ -149,10 +162,11 @@ func _test_choices() -> void:
 		check(events.size() >= 2 and events[-1].kind == "event_followup" and events[-2].kind == "victory" and events[-1].cause_id == events[-2].id and session.state_snapshot() == before_hit, "victory and follow-up are ordered, linked and purely simulated")
 		check(session.submit({"type":"use_item", "uid":"sword"}).is_empty(), "second battle commits")
 		var committed := session.state_snapshot()
+		check_v3(session, model, "follow-up result")
 		check(committed.phase == "event_result" and session.display_snapshot().phase == "battle", "outcome waits for playback")
 		var expected := "take" if variant == "take" else "leave"
 		check(committed.event.outcome == expected and committed.health == (18 if expected == "take" else 14), "outcome checks currently packed relic and applies bounded heal")
-		var loaded := SaveService.new(slot).load_slot(ItemCatalog.create_inventory())
+		var loaded := SaveService.new(slot).load_slot(ItemCatalog.create_inventory(LEGACY_CATALOG))
 		check(loaded.status == "ok" and loaded.state == committed, "follow-up saves before playback")
 		session.skip_playback()
 		check(session.display_snapshot() == committed, "skip shows exactly the committed outcome")

@@ -97,6 +97,7 @@ func validate(input: Variant) -> Dictionary:
 		if key not in ["schema_version", "art"] and not _schema.tables.has(key):
 			return {"error": "알 수 없는 콘텐츠 테이블: " + key}
 	for table: String in _schema.tables:
+		if table == "resolutions" and not raw.has(table): continue
 		if not raw.get(table) is Array or raw[table].size() > MAX_ROWS:
 			return {"error": table + ": 배열이 없거나 행 수 제한을 초과했습니다."}
 		var ids: Dictionary = {}
@@ -112,6 +113,7 @@ func validate(input: Variant) -> Dictionary:
 				if not error.is_empty(): return {"error": error}
 			if ids.has(row.id): return {"error": location + ": 중복 ID " + row.id}
 			ids[row.id] = true
+	if raw.get("resolutions", []).is_empty(): raw.erase("resolutions")
 	var problem := _references(raw)
 	if not problem.is_empty(): return {"error": problem}
 	return {"error": "", "raw": raw}
@@ -181,12 +183,13 @@ func _references(raw: Dictionary) -> String:
 	for unit: Dictionary in raw.effects:
 		for tag in split_ids(unit.required_tags) + split_ids(unit.condition_tags):
 			if not tags.has(tag): return "effects.%s: 알 수 없는 태그 %s" % [unit.id, tag]
-		if (unit.trigger == "modify") != (unit.operation == "modify_power"): return "effects.%s: modify / modify_power 조합이 필요합니다." % unit.id
+		if (unit.trigger == "modify") != (unit.operation in ["modify_power", "multiply_power"]): return "effects.%s: modify / 수정 연산 조합이 필요합니다." % unit.id
 		if unit.trigger == "modify":
-			if unit.target not in ["self", "adjacent_items"] or unit.affects.is_empty(): return "effects.%s: 수정 대상/affects 오류" % unit.id
+			if unit.target not in ["self", "adjacent_items", "diagonal_items", "neighbor_items"] or unit.affects.is_empty(): return "effects.%s: 수정 대상/affects 오류" % unit.id
+			if unit.operation == "multiply_power" and (unit.scale != "flat" or unit.amount < 1): return "effects.%s: 배율은 1 이상의 정수와 flat만 지원합니다." % unit.id
 		else:
-			if unit.target == "adjacent_items" or not unit.affects.is_empty() or not unit.required_tags.is_empty() or not unit.stack_group.is_empty(): return "effects.%s: 수정 전용 필드가 실행 효과에 있습니다." % unit.id
-		if unit.scale == "flat" and not unit.condition_tags.is_empty(): return "effects.%s: condition_tags에는 per_adjacent가 필요합니다." % unit.id
+			if unit.target not in ["self", "opponent"] or not unit.affects.is_empty() or not unit.required_tags.is_empty() or not unit.stack_group.is_empty(): return "effects.%s: 수정 전용 필드가 실행 효과에 있습니다." % unit.id
+		if unit.scale == "flat" and not unit.condition_tags.is_empty(): return "effects.%s: condition_tags에는 범위별 수량이 필요합니다." % unit.id
 	for item: Dictionary in raw.items:
 		if item.display_name.strip_edges().is_empty(): return "items.%s: 이름이 비어 있습니다." % item.id
 		if split_ids(item.effect_ids).size() > 32: return "items.%s: 아이템당 효과 단위는 최대 32개입니다." % item.id
@@ -248,6 +251,12 @@ func _references(raw: Dictionary) -> String:
 			if sequences.has(route.encounter_ids): return "routes: 같은 길목 순서가 중복됩니다."
 			sequences[route.encounter_ids] = true
 	if raw.events.size() > 1: return "events: 현재 출장당 사건은 최대 하나입니다."
+	var resolutions: Array = raw.get("resolutions", [])
+	if resolutions.size() > 1: return "resolutions: 현재 런당 결말 분기는 최대 하나입니다."
+	for resolution: Dictionary in resolutions:
+		if raw.events.size() != 1 or resolution.event_id != raw.events[0].id: return "resolutions.%s: 사건 참조가 올바르지 않습니다." % resolution.id
+		for field in ["message", "result", "button", "unavailable", "completion_title"]:
+			if resolution[field].strip_edges().is_empty() or resolution[field].length() > 240: return "resolutions.%s: %s가 비어 있거나 너무 깁니다." % [resolution.id, field]
 	for event: Dictionary in raw.events:
 		if raw.routes.is_empty() or event.step != 0 or raw.encounters.size() < 3: return "events.%s: 세 길목 이상의 경로에서 첫 길목 뒤 사건만 지원합니다." % event.id
 		if not items.has(event.item_id) or items[event.item_id].consumable: return "events.%s: 유효한 비소모 아이템이 필요합니다." % event.id
@@ -338,6 +347,7 @@ static func materialize(raw: Dictionary) -> Dictionary:
 		for id in split_ids(row.reaction_ids): enemy.reactions.append(ItemCodec.effect(effects[id]))
 		config.encounters.append(enemy)
 	config.events = raw.events.duplicate(true)
+	config.resolutions = raw.get("resolutions", []).duplicate(true)
 	config.routes = []
 	var positions: Dictionary = {}
 	for index in config.encounters.size(): positions[config.encounters[index].id] = index

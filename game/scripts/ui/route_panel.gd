@@ -46,7 +46,8 @@ func refresh(view: Dictionary, busy: bool) -> void:
 		choices.clear()
 		for route: Dictionary in view.config.routes:
 			var next: Dictionary = view.config.encounters[route.encounters[1]]
-			var later: Dictionary = view.config.encounters[route.encounters[2]] if route.encounters.size() > 2 else {}
+			var has_later: bool = route.encounters.size() > 2 and view.config.get("resolutions", []).is_empty()
+			var later: Dictionary = view.config.encounters[route.encounters[2]] if has_later else {}
 			var intent: Dictionary = next.intents[0]
 			var button := Button.new()
 			button.text = "%s\n%s\n다음: %s · 체력 %d · 첫 행동 %s %d%s" % [route.name, route.description,

@@ -10,4 +10,4 @@ rope,오라,꺾인 형태의 무기. 회전해 틈에 넣고 인접 보너스를
 sandals,짚신,갓보다 작은 방어 도구. 남은 공간으로 다른 물건을 챙길 수 있습니다.,0:0|0:1,,1,1,False,sandals,sandals_use
 order,적패지,인도 명령을 담은 문서. 큰 힘을 쓰는 만큼 기력을 아껴야 합니다. 능력은 게임용 창작입니다.,0:0|0:1,,2,1,False,order,order_use
 coin,남겨진 엽전,기력을 쓰지 않고 작은 방어를 얻는 유품.,0:0,keepsake,0,1,False,coin,coin_use
-mirror,작은 동경,거울에 비친 불빛이 길을 지켜 줍니다.,0:0|1:0,,1,1,False,mirror,mirror_use|mirror_bonus
+mirror,핏자국이 남은 동경,대숲에서 찾은 동경. 누군가의 마지막 기억이 남아 있다.,0:0|1:0,,1,1,False,mirror,mirror_use|mirror_bonus

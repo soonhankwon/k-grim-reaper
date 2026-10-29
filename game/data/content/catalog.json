@@ -1617,7 +1617,7 @@
 			"hp": 18,
 			"id": "gate_1",
 			"intent_ids": "encounter_1_intent_1|encounter_1_intent_2",
-			"name": "길 잃은 그림자",
+			"name": "두려움에 사로잡힌 포졸",
 			"order": 0,
 			"reaction_ids": "",
 			"visual_id": "spirit_1"
@@ -1626,7 +1626,7 @@
 			"hp": 24,
 			"id": "gate_2",
 			"intent_ids": "encounter_2_intent_1|encounter_2_intent_2",
-			"name": "매듭 잡귀",
+			"name": "원혼 아랑",
 			"order": 1,
 			"reaction_ids": "",
 			"visual_id": "spirit_2"
@@ -1635,7 +1635,7 @@
 			"hp": 30,
 			"id": "gate_3",
 			"intent_ids": "encounter_3_intent_1|encounter_3_intent_2|encounter_3_intent_3",
-			"name": "먹빛 파수꾼",
+			"name": "원혼 아랑",
 			"order": 2,
 			"reaction_ids": "",
 			"visual_id": "spirit_3"
@@ -1643,16 +1643,16 @@
 	],
 	"events": [
 		{
-			"description": "길가에 작은 동경이 놓여 있습니다. 망자가 떠올릴 수 있도록 보따리에 챙길까요?",
-			"heal_amount": 4,
+			"description": "대숲에서 핏자국이 남은 동경을 찾았다. 진실을 기억할 물건을 챙길까?",
+			"heal_amount": 0,
 			"id": "lost_keepsake",
 			"item_id": "mirror",
 			"leave_label": "그 자리에 둔다",
-			"leave_result": "망자는 동경의 기억을 알아보지 못하지만 차사의 안내를 따라 길을 이어갑니다.",
+			"leave_result": "아랑의 원한을 힘으로 가라앉혔다. 그녀의 사연은 여전히 어둠 속에 남아 있다.",
 			"step": 0,
 			"take_label": "동경을 챙긴다",
-			"take_result": "동경을 본 망자가 등불을 떠올리며 숨을 고릅니다. 차사도 잠시 힘을 되찾습니다.",
-			"title": "길가의 동경"
+			"take_result": "아랑의 원한을 힘으로 가라앉혔다. 동경은 남았지만, 그녀가 전하려던 말은 끝내 듣지 못했다.",
+			"title": "대숲의 증거"
 		}
 	],
 	"items": [
@@ -1791,8 +1791,8 @@
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "거울에 비친 불빛이 길을 지켜 줍니다.",
-			"display_name": "작은 동경",
+			"description": "대숲에서 찾은 동경. 누군가의 마지막 기억이 남아 있다.",
+			"display_name": "핏자국이 남은 동경",
 			"effect_ids": "mirror_use|mirror_bonus",
 			"footprint": "0:0|1:0",
 			"icon_id": "mirror",
@@ -1852,6 +1852,18 @@
 			"y": -1
 		}
 	],
+	"resolutions": [
+		{
+			"allow_stash": true,
+			"button": "동경을 보여 주고 듣는다",
+			"completion_title": "아랑의 밤 · 첫 인도 완료",
+			"event_id": "lost_keepsake",
+			"id": "evidence_resolution",
+			"message": "동경을 보여 주자 아랑이 말을 잇는다.",
+			"result": "아랑은 동경을 알아보고 자신의 억울함을 직접 이야기한다. 차사는 그 말을 명부에 적고, 진실을 전하겠다고 약속한다. 아랑은 고개를 끄덕이며 스스로 길을 나선다.",
+			"unavailable": "증거를 보따리에 넣으면 아랑의 이야기를 들을 수 있습니다."
+		}
+	],
 	"rewards": [
 		{
 			"encounter_id": "gate_1",
@@ -1866,17 +1878,17 @@
 	],
 	"routes": [
 		{
-			"description": "매듭 잡귀를 먼저 만나고 먹빛 파수꾼에게 향합니다.",
+			"description": "대숲에서 아랑을 만납니다. 첫 행동은 방어이며 체력이 낮습니다.",
 			"encounter_ids": "gate_1|gate_2|gate_3",
 			"id": "mist_path",
-			"name": "안개 고갯길",
+			"name": "대숲을 따라간다",
 			"reward_ids": "first_crossing|second_crossing"
 		},
 		{
-			"description": "먹빛 파수꾼을 먼저 넘어 매듭 잡귀에게 향합니다.",
+			"description": "연못을 지나 아랑을 만납니다. 첫 행동은 공격이며 체력이 높습니다.",
 			"encounter_ids": "gate_1|gate_3|gate_2",
 			"id": "moon_path",
-			"name": "달그늘 샛길",
+			"name": "연못을 지나간다",
 			"reward_ids": "first_crossing|second_crossing"
 		}
 	],

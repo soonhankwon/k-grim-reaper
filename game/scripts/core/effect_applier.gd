@@ -4,6 +4,9 @@ extends RefCounted
 
 const MAX_ACTIVE_ITEMS := 64
 const MAX_ACTIVE_UNITS := 256
+# Largest exact integer preserved by JSON save/load, not a balance cap.
+const MAX_EXACT := 9007199254740991
+const POWER_ERROR := "효과 수치가 정확하게 처리할 수 있는 한도를 초과했습니다."
 
 static func within_budget(items: Dictionary) -> bool:
 	if items.size() > MAX_ACTIVE_ITEMS: return false
@@ -28,12 +31,24 @@ static func _precedes(a: Dictionary, b: Dictionary) -> bool:
 	if a.get("source", "") != b.get("source", ""): return str(a.get("source", "")) < str(b.get("source", ""))
 	return str(a.id) < str(b.id)
 
-static func _amount(items: Dictionary, source: String, unit: Dictionary) -> int:
-	if unit.scale == "flat": return unit.amount
-	var count := 0
+static func _matches(items: Dictionary, source: String, unit: Dictionary) -> Array[String]:
+	var matches: Array[String] = []
+	if unit.scale == "flat": return matches
+	var range_mode := _range_for_scale(unit.scale)
 	for other: String in items:
-		if other != source and has_tags(items[other], unit.condition_tags) and GridRules.adjacent(items[source], items[other]): count += 1
-	return int(unit.amount) * mini(count, int(unit.max_matches))
+		if other != source and has_tags(items[other], unit.condition_tags) and GridRules.in_range(items[source], items[other], range_mode): matches.append(other)
+	matches.sort()
+	return matches
+
+static func _range_for_scale(scale: String) -> String:
+	return {"per_adjacent":"orthogonal", "per_diagonal":"diagonal", "per_neighbor":"neighbor"}.get(scale, "")
+
+static func _range_for_target(target: String) -> String:
+	return {"adjacent_items":"orthogonal", "diagonal_items":"diagonal", "neighbor_items":"neighbor"}.get(target, "")
+
+static func _amount(unit: Dictionary, matches: Array[String]) -> int:
+	if unit.scale == "flat": return unit.amount
+	return int(unit.amount) * mini(matches.size(), int(unit.max_matches))
 
 static func plan(items: Dictionary, uid: String, trigger: String) -> Array[Dictionary]:
 	var result: Array[Dictionary] = []
@@ -43,16 +58,20 @@ static func plan(items: Dictionary, uid: String, trigger: String) -> Array[Dicti
 	var units: Array = item.effects.duplicate(true)
 	units.sort_custom(_precedes)
 	for unit: Dictionary in units:
-		if unit.trigger != trigger or unit.operation == "modify_power": continue
-		var base := _amount(items, uid, unit)
+		if unit.trigger != trigger or unit.operation in ["modify_power", "multiply_power"]: continue
+		var matches := _matches(items, uid, unit)
+		var base := _amount(unit, matches)
 		var amount := base
 		var bonuses: Array[Dictionary] = []
+		var multipliers: Array[Dictionary] = []
+		var error := ""
 		var candidates: Array[Dictionary] = []
 		for source: String in items:
 			for modifier: Dictionary in items[source].effects:
 				if modifier.trigger != "modify" or modifier.affects != unit.operation: continue
 				if modifier.target == "self" and source != uid: continue
-				if modifier.target == "adjacent_items" and (source == uid or not GridRules.adjacent(item, items[source])): continue
+				var range_mode := _range_for_target(modifier.target)
+				if not range_mode.is_empty() and (source == uid or not GridRules.in_range(item, items[source], range_mode)): continue
 				if not has_tags(item, modifier.required_tags): continue
 				var candidate := modifier.duplicate(true)
 				candidate.source = source
@@ -60,16 +79,38 @@ static func plan(items: Dictionary, uid: String, trigger: String) -> Array[Dicti
 		candidates.sort_custom(_precedes)
 		var seen: Dictionary = {}
 		for modifier: Dictionary in candidates:
+			if modifier.operation != "modify_power": continue
 			var key := str(modifier.stack_group)
 			if not key.is_empty() and seen.has(key): continue
-			var bonus := _amount(items, modifier.source, modifier)
+			var bonus_matches := _matches(items, modifier.source, modifier)
+			var bonus := _amount(modifier, bonus_matches)
 			if bonus == 0: continue
 			if not key.is_empty(): seen[key] = true
 			amount += bonus
-			bonuses.append({"source": modifier.source, "effect_id": modifier.id, "name": items[modifier.source].name, "amount": bonus})
+			bonuses.append({"source": modifier.source, "effect_id": modifier.id, "name": items[modifier.source].name, "amount": bonus, "range": _range_for_target(modifier.target), "matches": bonus_matches, "match_range": _range_for_scale(modifier.scale), "max_matches": modifier.max_matches})
+		# Groups are independent per operation. Multipliers apply after all additions.
+		seen.clear()
+		for modifier: Dictionary in candidates:
+			if modifier.operation != "multiply_power": continue
+			var key := str(modifier.stack_group)
+			if not key.is_empty() and seen.has(key): continue
+			var factor := int(modifier.amount)
+			if factor < 1:
+				error = "배율은 1 이상의 정수여야 합니다."
+				amount = 0
+				break
+			if not key.is_empty(): seen[key] = true
+			multipliers.append({"source": modifier.source, "effect_id": modifier.id, "name": items[modifier.source].name, "factor": factor, "range": _range_for_target(modifier.target)})
+			@warning_ignore("integer_division")
+			var limit: int = MAX_EXACT / factor
+			if amount > limit:
+				error = POWER_ERROR
+				amount = 0
+				break
+			amount *= factor
 		result.append({"kind": unit.operation, "source": uid, "effect_id": unit.id, "label": item.name,
 			"target": "player" if unit.target == "self" else "enemy", "amount": amount,
-			"base": base, "bonuses": bonuses, "priority": unit.priority, "max_per_action": unit.max_per_action})
+			"base": base, "matches": matches, "match_range": _range_for_scale(unit.scale), "max_matches": unit.max_matches, "bonuses": bonuses, "multipliers": multipliers, "error": error, "priority": unit.priority, "max_per_action": unit.max_per_action})
 	return result
 
 static func actor_plan(unit: Dictionary, owner: String, label: String) -> Dictionary:
@@ -98,6 +139,7 @@ static func evaluate(state: Dictionary, effect: Dictionary) -> Dictionary:
 			details = {"absorbed": absorbed, "health_damage": damage}
 			message = "%s: 피해 %d (방어 %d)" % [effect.label, damage, absorbed]
 		"guard":
+			if amount > MAX_EXACT - int(state[guard_key]): return {"error": POWER_ERROR}
 			changes[guard_key] = int(state[guard_key]) + amount
 			message = "%s: 방어 +%d" % [effect.label, amount]
 		"set_guard":

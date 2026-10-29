@@ -20,9 +20,9 @@ func beat(main: Control) -> void:
 	main._activate_item("sword")
 
 func _run() -> void:
-	var entries := StoryBook.load_entries()
+	var entries := StoryBook.load_entries("res://tests/fixtures/story-v0.13.json")
 	verify(entries.size() == 4, "shipping story loads")
-	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(StoryBook.PATH))
+	var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://tests/fixtures/story-v0.13.json"))
 	var bad := raw.duplicate(true)
 	bad.entries[1].id = bad.entries[0].id
 	verify(StoryBook.validate(bad).is_empty(), "duplicate story ID is rejected")
@@ -37,7 +37,7 @@ func _run() -> void:
 	var folder := ProjectSettings.globalize_path("res://../build/story-ui/%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(folder)
 	var slot := folder.path_join("run.json")
-	var model := ItemCatalog.create_inventory()
+	var model := ItemCatalog.create_inventory("res://tests/fixtures/catalog-v0.13.json")
 	for route: Dictionary in model.config.routes:
 		for step in range(3):
 			var sample := CombatSimulator.initial_state(model.config)
@@ -52,6 +52,8 @@ func _run() -> void:
 	verify(store.write_slot(CombatResolver.new(model).snapshot(), model, []).is_empty(), "write previous-format save")
 	var saved := FileAccess.get_sha256(slot)
 	var main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	main.content_path = "res://tests/fixtures/catalog-v0.13.json"
+	main.story_path = "res://tests/fixtures/story-v0.13.json"
 	main.save_path = slot
 	root.add_child(main)
 	await process_frame
@@ -115,6 +117,8 @@ func _run() -> void:
 	main.queue_free()
 	await process_frame
 	main = (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	main.content_path = "res://tests/fixtures/catalog-v0.13.json"
+	main.story_path = "res://tests/fixtures/story-v0.13.json"
 	main.save_path = slot
 	root.add_child(main)
 	await process_frame

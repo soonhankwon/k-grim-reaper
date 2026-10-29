@@ -152,12 +152,18 @@ func preview(uid: String, origin: Vector2i, rotation: int) -> Dictionary:
 	state[uid].origin = origin
 	state[uid].rotation = rotation
 	var attacks: Dictionary = {}
+	var error := ""
 	for other: String in state:
 		var amount := 0
 		for plan: Dictionary in action_result(other, state).effects:
-			if plan.kind == "damage" and plan.target == "enemy": amount += int(plan.amount)
+			if not plan.error.is_empty(): error = plan.error
+			if plan.kind == "damage" and plan.target == "enemy":
+				if amount > EffectApplier.MAX_EXACT - int(plan.amount): error = EffectApplier.POWER_ERROR
+				else: amount += int(plan.amount)
 		if amount > 0: attacks[other] = amount
-	return {"action": action_result(uid, state), "guard": passive_guard(state), "attacks": attacks, "snapshot": combat_snapshot(state)}
+	var guard := InventoryRules.totals(combat_snapshot(state), "turn_end")
+	if not guard.error.is_empty(): error = guard.error
+	return {"action": action_result(uid, state), "guard": guard.guard, "attacks": attacks, "snapshot": combat_snapshot(state), "error": error}
 
 func used_cells() -> int:
 	var count := 0

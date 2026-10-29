@@ -59,18 +59,54 @@ func _run() -> void:
 	main._primary_action()
 	verify(main.primary.disabled, "primary action is locked immediately on submission")
 	await drain(main.session)
+	verify(main.layout.turn_preview.visible and main.labels.preview_summary.text.contains("예상 피해"), "turn preview appears after battle starts")
+	var first_preview: String = main.labels.preview_summary.text
 	main._select("sword")
 	verify(main.rotate_button.disabled and not main.layout.preparation.visible, "battle locks and hides rearrangement")
 	press.position = InventoryBoard.PAD + Vector2(3.5,0.5) * InventoryBoard.CELL
 	main.board._gui_input(press)
 	verify(main.session.state_snapshot().enemy_health == 10 and main.primary.disabled, "simulation commits while actions are locked")
+	verify(not main.layout.turn_preview.visible, "turn preview hides during playback")
 	verify(main.enemy_bar.value == 18, "health bar stays on presented snapshot until impact")
 	main._activate_item("sword")
 	verify(main.session.state_snapshot().enemy_health == 10, "rapid repeat click during playback cannot act twice")
 	verify(not main.labels.notice.text.contains("피해 8"), "damage message is not shown before the impact snapshot")
 	await drain(main.session)
 	verify(main.enemy_bar.value == 10, "impact playback updates health bar")
+	verify(main.layout.turn_preview.visible and main.labels.preview_summary.text == first_preview, "turn preview returns after settled state")
 	verify(main.labels.notice.text.contains("피해 8"), "damage message appears after its impact snapshot")
+	main._activate_item("hat")
+	await drain(main.session)
+	verify(main.labels.preview_summary.text.contains("예상 피해 0") and main.labels.preview_summary.text != first_preview, "using defense recalculates the preview")
+	for window_size in [Vector2i(1024,576), Vector2i(1280,720), Vector2i(1920,1080)]:
+		root.size = window_size
+		await process_frame
+		verify(Rect2(Vector2.ZERO, main.size).encloses(main.layout.turn_preview.get_global_rect()), "turn preview stays inside the window")
+		verify(not main.layout.turn_preview.get_global_rect().intersects(main.board.get_global_rect()), "turn preview does not cover the board")
+	root.size = Vector2i(1280,720)
+	var winning_view: Dictionary = main.session.display_snapshot()
+	winning_view.guard = 0
+	winning_view.enemy_health = 1
+	winning_view.reactions = [{"id":"counter", "name":"counter", "owner":"player", "effect":"damage", "target":"enemy", "amount":2}]
+	main.session.reset(main.inventory, winning_view)
+	verify(main.labels.preview_summary.text.contains("승리"), "preview reports victory even when victory opens a reward")
+	winning_view.health = 1
+	main.session.reset(main.inventory, winning_view)
+	verify(main.labels.preview_summary.text.contains("패배"), "preview reports defeat when a lethal hit prevents reaction")
+	var long_view: Dictionary = main.session.display_snapshot()
+	long_view.health = 28
+	long_view.enemy_health = 18
+	long_view.reactions = []
+	for i in 20:
+		long_view.reactions.append({"id":"guard_%02d" % i, "name":"반응 방어 %02d" % i, "owner":"player", "effect":"guard", "target":"player", "amount":1})
+	main.session.reset(main.inventory, long_view)
+	await process_frame
+	await process_frame
+	verify(main.layout.turn_preview_scroll.get_v_scroll_bar().max_value > main.layout.turn_preview_scroll.size.y, "long prediction remains accessible by scrolling")
+	var invalid_view: Dictionary = main.session.display_snapshot()
+	invalid_view.reactions = [{"id":"dup", "name":"a", "owner":"player", "effect":"guard", "target":"player", "amount":1}, {"id":"dup", "name":"b", "owner":"player", "effect":"guard", "target":"player", "amount":1}]
+	main.session.reset(main.inventory, invalid_view)
+	verify(main.layout.turn_preview.visible and main.labels.preview_summary.text.contains("예측할 수 없습니다") and not main.labels.preview_body.text.is_empty(), "preview errors show an explanation instead of a guessed number")
 	main._reset_run()
 	main._select("yakgwa")
 	main._place("yakgwa", Vector2i(4,1), 0)
