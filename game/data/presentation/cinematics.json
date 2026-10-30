@@ -33,5 +33,29 @@
         0.79
       ]
     }
+  },
+  "dialogue": {
+    "spirit_1": {
+      "battle_started": {
+        "speaker": "Terrified Guard",
+        "text": "Stay back! A woman in white came from the bamboo. I will not let her near the magistrate!"
+      },
+      "victory": {
+        "speaker": "Terrified Guard",
+        "text": "The grove... that is where I heard her voice. Please, find out what she wants."
+      }
+    },
+    "spirit_2": {
+      "encounter_resolved": {
+        "speaker": "Arang",
+        "text": "That mirror... You found it? Please, listen to me."
+      }
+    },
+    "spirit_3": {
+      "encounter_resolved": {
+        "speaker": "Arang",
+        "text": "That mirror... You found it? Please, listen to me."
+      }
+    }
   }
 }

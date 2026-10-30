@@ -164,6 +164,26 @@ func _test_ui() -> void:
 	check(main.session.submit({"type":"start"}).is_empty(), "start risk encounter")
 	main.session.skip_playback()
 	check(main.labels.enemy_reactions.visible and main.labels.enemy_reactions.text.contains("1/action"), "warning remains visible during battle")
+	check(main.session.submit({"type":"use_item", "uid":"sword"}).is_empty(), "counter encounter attack accepted")
+	for i in 20:
+		main.session.playback.queue._process(0)
+		var cmd: CombatEventCommand = main.session.playback.queue._current
+		if cmd == null: break
+		if not str(cmd._event.get("trigger_key", "")).is_empty(): break
+		if cmd._tween != null: cmd._tween.kill()
+		cmd._impact()
+		cmd._complete()
+	var counter: CombatEventCommand = main.session.playback.queue._current
+	check(counter != null and main.road.feedback_caption == "COUNTER" and not main.road.feedback_impact, "recorded counter is prepared without revealing impact")
+	check(main.session.playback._event_duration >= 0.85, "counter explanation remains readable")
+	if counter != null:
+		var prior_health: int = main.session.display_snapshot().health
+		counter._impact()
+		check(main.road.feedback_caption == "COUNTER" and main.road.feedback_text == "-2" and main.session.display_snapshot().health == prior_health - 2, "counter, damage and health appear together")
+		counter._impact()
+		check(main.session.display_snapshot().health == prior_health - 2, "duplicate counter impact is ignored")
+	main.session.skip_playback()
+	check(main.road.feedback_caption.is_empty() and main.session.display_snapshot() == main.session.state_snapshot(), "skip clears counter feedback")
 	var route_state: Dictionary = main.session.display_snapshot()
 	route_state.phase = "route"
 	route_state.route = {"choice":"", "step":0}

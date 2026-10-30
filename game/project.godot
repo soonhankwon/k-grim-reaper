@@ -8,15 +8,15 @@ run/main_scene="res://scenes/launch.tscn"
 config/features=PackedStringArray("4.7", "GL Compatibility")
 
 [display]
-window/size/viewport_width=640
-window/size/viewport_height=360
+window/size/viewport_width=1280
+window/size/viewport_height=720
 window/size/window_width_override=1280
 window/size/window_height_override=720
 window/size/min_width=1024
 window/size/min_height=576
 window/stretch/mode="viewport"
 window/stretch/aspect="keep"
-window/stretch/scale_mode="integer"
+window/stretch/scale_mode="fractional"
 
 [rendering]
 renderer/rendering_method="gl_compatibility"

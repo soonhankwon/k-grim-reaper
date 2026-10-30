@@ -41,7 +41,7 @@ func _run() -> void:
 	DirAccess.make_dir_recursive_absolute(base)
 	await _test_old_save_preservation()
 	for path_index in [0,1]:
-		for choice in ["resolve", "stashed", "leave"]:
+		for choice in ["resolve", "carried_fight", "stashed", "leave"]:
 			await _play(path_index, choice)
 	print("STAGE ONE UI: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
@@ -80,8 +80,20 @@ func _play(path_index: int, choice: String) -> void:
 		root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../build/arang-stage-office.png"))
 	check(submit(main, {"type":"start"}) and fight(main), "first battle won with normal starting layout")
 	check(submit(main, {"type":"reward_skip", "offer_id":main.session.display_snapshot().reward.offer_id}), "first reward handled")
+	var intent_font: Font = main.labels.intent.get_theme_font("font")
+	check(intent_font.get_string_size(main.labels.intent.text, HORIZONTAL_ALIGNMENT_LEFT, -1, main.labels.intent.get_theme_font_size("font_size")).x <= main.labels.intent.size.x, "victory guidance fits its label")
 	check(submit(main, {"type":"advance"}) and main.session.display_snapshot().phase == "event", "evidence event opens")
+	check(main.primary.disabled and main.primary.text == "Choose below", "unselected event asks for a choice instead of requiring bag placement")
 	var event: Dictionary = main.session.display_snapshot().event
+	await process_frame
+	await process_frame
+	check(main.layout.encounter_event.description.text.contains("Someone has to remember"), "evidence scene introduces the voice without revealing the ending")
+	check(main.layout.encounter_event.description_scroll.get_v_scroll_bar().max_value > main.layout.encounter_event.description_scroll.get_v_scroll_bar().page, "long evidence scene is scrollable")
+	var before_read: Dictionary = main.session.state_snapshot()
+	var saved_before_read := FileAccess.get_sha256(slot)
+	main.layout.encounter_event.description_scroll.scroll_vertical = 30
+	await process_frame
+	check(main.session.state_snapshot() == before_read and FileAccess.get_sha256(slot) == saved_before_read, "reading evidence changes neither state nor save")
 	if choice == "leave":
 		check(submit(main, {"type":"event_leave", "event_id":event.id}), "leave evidence")
 	else:
@@ -92,11 +104,16 @@ func _play(path_index: int, choice: String) -> void:
 	var selected_route: Dictionary = main.inventory.config.routes[path_index]
 	check(submit(main, {"type":"choose_route", "route_id":selected_route.id}), "select path")
 	check(main.labels.enemy.text == "Arang, Restless Spirit" and main.layout.background_texture.resource_path.ends_with("arang-bamboo-v1.png"), "second encounter uses arang and grove")
+	check(main.layout.buttons.story_teaser.text.contains("left behind") if choice == "leave" else main.layout.buttons.story_teaser.text.contains("Carry the mirror"), "preparation hint reflects whether evidence was left or stored")
 	var intent: Dictionary = CombatSimulator.intent(main.session.display_snapshot())
 	check(intent.operation == ("set_guard" if path_index == 0 else "damage"), "route displays different opening intention")
-	if choice == "resolve": check(main.session.stash("hat").is_empty() and main.session.place(event.uid, Vector2i(1,2), 0).is_empty(), "evidence fits after meaningful rearrangement")
+	if choice in ["resolve", "carried_fight"]:
+		check(main.session.stash("hat").is_empty() and main.session.place(event.uid, Vector2i(1,2), 0).is_empty(), "evidence fits after meaningful rearrangement")
+		check(main.layout.buttons.story_teaser.text.contains("in your bag"), "preparation hint acknowledges packed evidence")
 	check(submit(main, {"type":"start"}), "start arang encounter")
-	check(main.layout.buttons.resolution.visible and main.layout.buttons.resolution.disabled == (choice != "resolve"), "resolution availability matches evidence")
+	check(main.layout.buttons.resolution.visible and main.layout.buttons.resolution.disabled == (choice not in ["resolve", "carried_fight"]), "resolution availability matches evidence")
+	if choice == "leave": check(main.layout.buttons.resolution.text == "Evidence left behind" and main.layout.buttons.resolution.tooltip_text.contains("left"), "left evidence cannot be mistaken for retrievable evidence")
+	if choice == "stashed": check(main.layout.buttons.resolution.text == "Place evidence in your bag", "stored evidence instructions remain distinct")
 	if "--capture" in OS.get_cmdline_user_args() and path_index == 0 and choice == "resolve":
 		await process_frame
 		await RenderingServer.frame_post_draw
@@ -104,6 +121,9 @@ func _play(path_index: int, choice: String) -> void:
 	if choice == "resolve":
 		main.layout.buttons.resolution.pressed.emit()
 		check(main.session.state_snapshot().phase == "event_result" and main.session.display_snapshot().phase == "battle", "resolution is saved before display")
+		main.session.playback.queue._process(0)
+		check(main.cinematics.visible and main.cinematics.mode == "dialogue" and main.cinematics.data.speaker == "Arang", "mirror triggers Arang's recorded reaction")
+		check(main.session.display_snapshot().phase == "battle", "mirror dialogue precedes the displayed outcome")
 		var final_state: Dictionary = main.session.state_snapshot()
 		main.queue_free()
 		await process_frame
@@ -113,6 +133,15 @@ func _play(path_index: int, choice: String) -> void:
 	else:
 		check(fight(main) and main.session.display_snapshot().phase == "event_result", "attack path works from real state")
 		check(main.session.display_snapshot().event.get("method", "") != "resolution", "attack ending distinguished")
+	await process_frame
+	await process_frame
+	var outcome: String = main.layout.encounter_event.description.text
+	check(outcome.contains("My name is Arang") if choice == "resolve" else (outcome.contains("In your bag") if choice == "carried_fight" else (outcome.contains("safe in storage") if choice == "stashed" else outcome.contains("mirror left"))), "the displayed outcome matches the committed choice")
+	if choice == "resolve":
+		check(main.layout.encounter_event.description_scroll.get_v_scroll_bar().max_value > main.layout.encounter_event.description_scroll.get_v_scroll_bar().page, "long ending is scrollable")
+	if "--capture" in OS.get_cmdline_user_args() and path_index == 0 and choice == "resolve":
+		await RenderingServer.frame_post_draw
+		root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../build/arang-narrative-ending.png"))
 	check(submit(main, {"type":"event_continue", "event_id":event.id}) and main.session.display_snapshot().phase == "complete", "stage completes")
 	var completed: Dictionary = main.session.display_snapshot()
 	main.queue_free()

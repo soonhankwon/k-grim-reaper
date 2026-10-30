@@ -3,6 +3,7 @@ extends Control
 ## Receives immutable presentation events; timing belongs to CombatEventCommand.
 const PATH := "res://data/presentation/cinematics.json"
 var entries: Dictionary = {}
+var story_dialogue_enabled := false
 var mode := ""
 var data: Dictionary = {}
 var visual: Dictionary = {}
@@ -56,6 +57,18 @@ func begin_event(event: Dictionary) -> bool:
 	visual = encounters[index].get("visual", {}).duplicate(true)
 	var id := str(visual.get("presentation_id", ""))
 	var table: Dictionary = {}
+	var dialogue_table: Dictionary = entries.get("dialogue", {})
+	var actor_dialogue: Variant = dialogue_table.get(id, {})
+	var moment: Variant = actor_dialogue.get(str(event.get("kind", "")), {}) if actor_dialogue is Dictionary else {}
+	if story_dialogue_enabled and moment is Dictionary and moment.get("speaker") is String and moment.get("text") is String and not moment.speaker.is_empty() and not moment.text.is_empty():
+		mode = "dialogue"
+		data = moment.duplicate(true)
+		duration_seconds = 3.2
+		progress = 0.0
+		wipe.hide()
+		show()
+		queue_redraw()
+		return true
 	if event.get("kind", "") == "battle_started":
 		mode = "intro"
 		table = entries.get("boss_intros", {})
@@ -127,6 +140,13 @@ func _draw() -> void:
 			var stamp := Rect2(133, 417, 72, 72)
 			draw_rect(stamp, Color("9f302b"), false, 5)
 			if font != null: draw_string(font, Vector2(138, 462), "SEAL", HORIZONTAL_ALIGNMENT_CENTER, 62, 20, Color("9f302b"))
+	elif mode == "dialogue":
+		draw_rect(Rect2(0, 0, 1280, 720), Color(0.03, 0.05, 0.06, 0.38))
+		draw_rect(Rect2(56, 480, 1168, 155), Color("192225"))
+		draw_rect(Rect2(56, 480, 1168, 155), Color("d0ab72"), false, 3)
+		if font != null:
+			draw_string(font, Vector2(82, 515), str(data.speaker), HORIZONTAL_ALIGNMENT_LEFT, 1000, 22, Color("e4bd7c"))
+			draw_multiline_string(font, Vector2(82, 552), str(data.text), HORIZONTAL_ALIGNMENT_LEFT, 1080, 24, -1, Color("f3e8cf"))
 	elif mode == "memory":
 		var texture := PresentationArt.visual_texture(str(data.get("image", "")))
 		if texture == null: return

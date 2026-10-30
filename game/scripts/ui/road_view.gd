@@ -5,14 +5,19 @@ extends Control
 class FeedbackOverlay extends Control:
 	var source: Control
 	func _draw() -> void:
-		if source == null or not source.feedback_impact or source.feedback_text.is_empty() or source.feedback_target not in ["player", "enemy"]: return
+		if source == null or not source.feedback_impact or (source.feedback_text.is_empty() and source.feedback_caption.is_empty()) or source.feedback_target not in ["player", "enemy"]: return
 		var anchor := Vector2(192, 86) if source.feedback_target == "player" else Vector2(882, 88)
 		anchor.y -= roundf(maxf(0.0, source.feedback_progress - 0.5) * 24.0 / 2.0) * 2.0
 		var color := Color("ffb09a") if source.feedback_kind == "damage" and source.feedback_damage > 0 else Color("a6e8c4")
 		var font := get_theme_default_font()
 		if font != null:
-			draw_string_outline(font, anchor, source.feedback_text, HORIZONTAL_ALIGNMENT_CENTER, 120, 24, 4, Color("17232a"))
-			draw_string(font, anchor, source.feedback_text, HORIZONTAL_ALIGNMENT_CENTER, 120, 24, color)
+			if not source.feedback_caption.is_empty():
+				var caption_anchor := anchor + Vector2(-45, 28)
+				draw_string_outline(font, caption_anchor, source.feedback_caption, HORIZONTAL_ALIGNMENT_CENTER, 210, 18, 4, Color("17232a"))
+				draw_string(font, caption_anchor, source.feedback_caption, HORIZONTAL_ALIGNMENT_CENTER, 210, 18, Color("bfe9ed"))
+			if not source.feedback_text.is_empty():
+				draw_string_outline(font, anchor, source.feedback_text, HORIZONTAL_ALIGNMENT_CENTER, 120, 24, 4, Color("17232a"))
+				draw_string(font, anchor, source.feedback_text, HORIZONTAL_ALIGNMENT_CENTER, 120, 24, color)
 
 var player_visual: Dictionary = {}
 var enemy_visual: Dictionary = {}
@@ -25,6 +30,7 @@ const INK_SHADER = preload("res://shaders/ink_dissolve.gdshader")
 var feedback_target := ""
 var feedback_kind := ""
 var feedback_text := ""
+var feedback_caption := ""
 var feedback_impact := false
 var feedback_progress := 0.0
 var feedback_damage := 0
@@ -60,7 +66,12 @@ func begin_feedback(event: Dictionary, before: Dictionary) -> void:
 	feedback_lethal = kind == "damage" and actor == "enemy" and int(event.get("health_damage", 0)) > 0 and int(before.get("enemy_health", 0)) > 0 and int(after_state.get("enemy_health", 1)) <= 0
 	var after: Dictionary = event.get("after", {})
 	match kind:
+		"action_started":
+			var extra := int(event.get("hazard_cost", 0))
+			if extra > 0: feedback_caption = "HAZARD +%d ENERGY" % extra
 		"damage":
+			if not str(event.get("trigger_key", "")).is_empty():
+				feedback_caption = "COUNTER" if event.get("source", "") == "enemy" and actor == "player" else "REACTION"
 			var damage := int(event.get("health_damage", 0))
 			var blocked := int(event.get("absorbed", 0))
 			feedback_damage = damage
@@ -95,6 +106,7 @@ func clear_feedback() -> void:
 	feedback_kind = ""
 	feedback_lethal = false
 	feedback_text = ""
+	feedback_caption = ""
 	feedback_impact = false
 	feedback_progress = 0.0
 	feedback_damage = 0

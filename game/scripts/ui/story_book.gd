@@ -40,3 +40,19 @@ static func unlocked(view: Dictionary, entries: Array[Dictionary]) -> Array[Dict
 	for entry: Dictionary in entries:
 		if int(entry.min_completed) <= completed: result.append(entry.duplicate(true))
 	return result
+
+# Presentation-only scenes are keyed by the already committed event ID.
+static func load_scenes(path: String) -> Dictionary:
+	var file := FileAccess.open(path, FileAccess.READ)
+	if file == null or file.get_length() > 262144: return {}
+	var doc: Variant = JSON.parse_string(file.get_as_text())
+	if not doc is Dictionary or doc.is_empty() or doc.size() > 100: return {}
+	var pattern := RegEx.new()
+	pattern.compile("^[a-z][a-z0-9_]{0,63}$")
+	var fields := ["discovery", "approach", "approach_left", "approach_packed", "listen", "fight_carried", "fight_stashed", "fight_left"]
+	for id: Variant in doc:
+		if not id is String or pattern.search(id) == null or not doc[id] is Dictionary or doc[id].size() != fields.size(): return {}
+		for field: String in fields:
+			var value: Variant = doc[id].get(field)
+			if not value is String or value.strip_edges().is_empty() or value.length() > 2000: return {}
+	return doc

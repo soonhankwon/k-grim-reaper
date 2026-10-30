@@ -5,6 +5,7 @@ source "$(dirname "$0")/common.sh"
 python3 "$PROJECT_ROOT/scripts/check-architecture.py"
 python3 "$PROJECT_ROOT/scripts/check-release-language.py"
 python3 "$PROJECT_ROOT/scripts/import-story.py" --check
+python3 "$PROJECT_ROOT/scripts/import-arang-scenes.py" --check
 python3 "$PROJECT_ROOT/scripts/check-story-import.py"
 
 verify_log() {

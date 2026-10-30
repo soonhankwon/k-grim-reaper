@@ -16,6 +16,64 @@ func _run() -> void:
 	main.save_enabled = false
 	root.add_child(main)
 	await process_frame
+	var fixture_main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	fixture_main.save_enabled = false
+	fixture_main.content_path = "res://tests/fixtures/baseline.json"
+	root.add_child(fixture_main)
+	check(not fixture_main.cinematics.story_dialogue_enabled, "fixture catalogs cannot inherit shipping narrative through shared actor art")
+	var fixture_event := {"kind":"battle_started", "after":fixture_main.session.display_snapshot()}
+	check(not fixture_main.cinematics.begin_event(fixture_event), "shared guard art alone does not trigger the shipping dialogue")
+	fixture_main.queue_free()
+	# The first guard speaks during the recorded start event, before its snapshot is presented.
+	check(main.session.submit({"type":"start"}).is_empty(), "guard battle starts")
+	main.session.playback.queue._process(0)
+	check(main.cinematics.mode == "dialogue" and main.cinematics.data.speaker == "Terrified Guard", "guard warns of the bamboo before combat")
+	check(main.session.display_snapshot().phase == "packing" and main.session.state_snapshot().phase == "battle", "guard dialogue does not reveal the committed battle snapshot early")
+	check(not main.session.submit({"type":"start"}).is_empty(), "dialogue blocks duplicate input")
+	main.session.skip_playback()
+	check(main.session.display_snapshot().phase == "battle" and not main.cinematics.visible, "skip reconciles and clears guard dialogue")
+	var guard_state: Dictionary = main.session.display_snapshot()
+	guard_state.enemy_health = 1
+	main.session.reset(main.inventory, guard_state)
+	check(main.session.submit({"type":"use_item", "uid":"sword"}).is_empty(), "guard defeat submitted")
+	for i in 20:
+		main.session.playback.queue._process(0)
+		var cmd: CombatEventCommand = main.session.playback.queue._current
+		if cmd == null: break
+		if cmd._event.kind == "victory": break
+		if cmd._tween != null: cmd._tween.kill()
+		cmd._impact()
+		cmd._complete()
+	check(main.cinematics.mode == "dialogue" and main.cinematics.data.text.contains("grove"), "guard victory leads to the grove")
+	check(main.session.display_snapshot().phase == "battle" and main.session.state_snapshot().phase == "reward", "guard victory dialogue does not reveal the reward early")
+	main.session.skip_playback()
+	check(main.session.display_snapshot().phase == "reward" and not main.cinematics.visible, "skipping guard victory shows the reward")
+	# Restart and zero-duration playback must not leave dialogue or delayed impacts behind.
+	guard_state.phase = "packing"
+	guard_state.enemy_health = guard_state.config.encounters[0].hp
+	guard_state.used = {}
+	main.session.reset(main.inventory, guard_state)
+	check(main.session.submit({"type":"start"}).is_empty(), "dialogue restart case starts")
+	main.session.playback.queue._process(0)
+	var stale: CombatEventCommand = main.session.playback.queue._current
+	main.session.reset(main.inventory, guard_state)
+	stale._impact()
+	check(not main.cinematics.visible and main.session.display_snapshot().phase == "packing", "reset cancels dialogue and ignores late impact")
+	check(main.session.submit({"type":"start"}).is_empty(), "missing dialogue completion case starts")
+	main.session.playback.queue._process(0)
+	main.session.playback.queue._process(4.1)
+	check(not main.cinematics.visible and not main.session.is_busy() and main.session.display_snapshot().phase == "battle", "watchdog clears dialogue and shows committed state")
+	main.session.reset(main.inventory, guard_state)
+	main.session.playback.seconds_per_step = 0.0
+	check(main.session.submit({"type":"start"}).is_empty(), "zero-duration dialogue case starts")
+	main.session.playback.queue._process(0)
+	main.session.playback.queue._process(0)
+	check(main.session.display_snapshot().phase == "battle" and not main.cinematics.visible and not main.session.is_busy(), "zero-duration dialogue completes immediately")
+	main.session.playback.seconds_per_step = 0.16
+	main.session.reset(main.inventory, guard_state)
+	check(main.session.submit({"type":"start"}).is_empty(), "natural guard dialogue starts")
+	await create_timer(3.7).timeout
+	check(main.session.display_snapshot().phase == "battle" and not main.cinematics.visible and not main.session.is_busy(), "guard dialogue completes before watchdog timeout")
 	var route_state: Dictionary = main.session.display_snapshot()
 	route_state.phase = "route"
 	route_state.route = {"choice":"", "step":0}
@@ -155,6 +213,16 @@ func _run() -> void:
 		root.size = size
 		await process_frame
 		check(Rect2(Vector2.ZERO, main.size).encloses(main.layout.buttons.sound.get_global_rect()), "sound toggle fits viewport " + str(size) + " rect=" + str(main.layout.buttons.sound.get_global_rect()))
+	var closing_main := (load("res://scenes/main.tscn") as PackedScene).instantiate()
+	closing_main.save_enabled = false
+	root.add_child(closing_main)
+	check(closing_main.session.submit({"type":"start"}).is_empty(), "scene exit case starts guard dialogue")
+	closing_main.session.playback.queue._process(0)
+	check(closing_main.cinematics.visible, "dialogue is visible before scene exit")
+	var closing_ref: WeakRef = weakref(closing_main)
+	closing_main.queue_free()
+	await process_frame
+	check(closing_ref.get_ref() == null, "scene exit frees active dialogue and its playback")
 	main.queue_free()
 	await process_frame
 	print("CINEMATICS TESTS: %d checks, %d failures" % [checks, failures])

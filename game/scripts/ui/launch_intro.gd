@@ -5,12 +5,11 @@ extends Control
 signal accepted
 signal cancelled
 
-const FONT = preload("res://assets/fonts/Galmuri11-ui-360.res")
-const FALLBACK = preload("res://assets/fonts/NotoSansKR.ttf")
+const FONT = preload("res://assets/fonts/NotoSansKR.ttf")
 var heading := "REAPER'S BUNDLE"
 var chapter := "FIRST DELIVERY · MIRYANG"
-var description := "Three magistrates died on their first night.\nA rookie reaper is sent to protect the fourth and uncover the truth."
-var instructions := "Arrange your bag before battle.\nClick an item to use it; read the enemy's next move.\nFind evidence and decide how to face Arang."
+var description := "Three magistrates died on their first night in Miryang.\nBefore dawn, find the spirit haunting the fourth."
+var instructions := "Arrange your bag before battle.\nClick an item to use it; read the enemy's next move.\nFollow the clues and decide how to face the spirit."
 var note := "Your journey begins with a bag of belongings."
 var action_text := "Begin Delivery"
 var cancel_text := ""
@@ -22,11 +21,11 @@ var _canvas: Control
 func _ready() -> void:
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	var font := FontVariation.new()
-	font.base_font = FONT
-	font.fallbacks = [FALLBACK]
+	var readable_font := FontVariation.new()
+	readable_font.base_font = FONT
+	readable_font.variation_opentype = {0x77676874: 600} # OpenType wght axis
 	theme = Theme.new()
-	theme.default_font = font
+	theme.default_font = readable_font
 	theme.default_font_size = 18
 	theme.set_color("font_color", "Label", Color("ecdfbf"))
 	theme.set_color("font_color", "Button", Color("ecdfbf"))

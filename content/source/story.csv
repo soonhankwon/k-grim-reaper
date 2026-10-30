@@ -1,5 +1,13 @@
 id,min_completed,title,teaser,text
-assignment,0,The First Night in Miryang,Your first task: protect the new magistrate.,The previous magistrates died mysteriously on their first night. A rookie reaper is sent to protect the fourth and investigate the spirit haunting the office.
-first_trace,1,A Trace in the Bamboo,Find the story the spirit wants to tell.,"After calming the terrified guard, the reaper discovers a trace in the grove. The mirror can be kept in storage or placed in the bag."
-second_trace,2,Meeting Arang,Consider what Arang wanted to reveal.,Arang is more than a fearsome spirit: she wants someone to hear the injustice she suffered. Bring the evidence in your bag to show it to her.
-completion,3,The End of the First Night,Record the choices of the night.,"The first night in Miryang is over. The reaper records what was seen and heard, and the story left untold."
+assignment,0,The First Night in Miryang,Three magistrates. Three nights. No answers.,"The assignment is written in a trembling hand: three magistrates died on their first night in Miryang. The fourth is due to arrive before dawn.
+
+Your mentor's warning is brief: 'A frightened spirit may look like a monster. Learn what it wants before you decide what it deserves.'"
+first_trace,1,The Guard at the Gate,The guard fears a woman in white.,"The guard raises his weapon before you can speak. When he finally lowers it, he points beyond the office: a woman in white, he says, appears among the bamboo whenever the moon rises.
+
+He knows no name. Beneath his fear is something else: the terror of being the next to die."
+second_trace,2,A Voice in the Bamboo,What happened in the grove?,"The spirit blocking the path was Arang. Whether you heard her or brought the fight to an end, the silence that follows leaves the same question: what happened to her in the bamboo?
+
+Your report will have to distinguish what you witnessed from what you could not learn."
+completion,3,The First Delivery,The night ends; the record remains.,"Dawn reaches the magistrate's office. The new magistrate has survived the night, and your first delivery is complete.
+
+You leave a record of the choice you made in the grove. A reaper can open a path for the dead, but the living must decide what to do with the truth."

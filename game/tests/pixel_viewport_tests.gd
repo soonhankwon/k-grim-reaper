@@ -61,14 +61,14 @@ func _run() -> void:
 	main.save_enabled = false
 	main.content_path = "res://tests/fixtures/baseline.json"
 	root.add_child(main)
-	for spec in [[Vector2i(1024, 576), 1, Vector2(192, 108)], [Vector2i(1280, 720), 2, Vector2.ZERO], [Vector2i(1366, 768), 2, Vector2(43, 24)], [Vector2i(1920, 1080), 3, Vector2.ZERO]]:
+	for spec in [[Vector2i(1024, 576), 0.8, Vector2.ZERO], [Vector2i(1280, 720), 1.0, Vector2.ZERO], [Vector2i(1366, 768), 768.0 / 720.0, Vector2(0.5, 0)], [Vector2i(1920, 1080), 1.5, Vector2.ZERO]]:
 		root.size = spec[0]
 		await process_frame
 		await process_frame
 		var transform := root.get_screen_transform()
-		check(root.get_visible_rect().size == Vector2(640, 360), "logical viewport remains 640x360")
-		check(is_equal_approx(transform.x.x, spec[1]) and is_equal_approx(transform.y.y, spec[1]) and transform.origin.is_equal_approx(spec[2]), "integer scale and centered margins at " + str(spec[0]))
-		check(main.layout.scale.is_equal_approx(Vector2(0.5, 0.5)), "layout matches the logical viewport")
+		check(root.get_visible_rect().size == Vector2(1280, 720), "logical viewport remains 1280x720")
+		check(absf(transform.x.x - spec[1]) < 0.002 and absf(transform.y.y - spec[1]) < 0.002 and transform.origin.distance_to(spec[2]) <= 1.0, "scale and centered margins at " + str(spec[0]))
+		check(main.layout.scale.is_equal_approx(Vector2.ONE), "layout matches the logical viewport")
 		var board_transform: Transform2D = transform * main.board.get_global_transform_with_canvas()
 		var from: Vector2 = board_transform * (InventoryBoard.PAD + Vector2(1.5, 0.5) * InventoryBoard.CELL)
 		var to: Vector2 = board_transform * (InventoryBoard.PAD + Vector2(2.5, 1.5) * InventoryBoard.CELL)

@@ -5,6 +5,9 @@ extends PanelContainer
 signal action_requested(kind: String)
 var heading: Label
 var description: Label
+var description_scroll: ScrollContainer
+var scenes: Dictionary = {}
+var _displayed_text := ""
 var take: Button
 var leave: Button
 
@@ -19,10 +22,15 @@ func _ready() -> void:
 	heading.add_theme_font_size_override("font_size", 22)
 	heading.add_theme_color_override("font_color", Color("e0bb74"))
 	column.add_child(heading)
+	description_scroll = ScrollContainer.new()
+	description_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	description_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	column.add_child(description_scroll)
 	description = Label.new()
 	description.add_theme_font_size_override("font_size", 20)
 	description.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(description)
+	description.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	description_scroll.add_child(description)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 12)
 	column.add_child(row)
@@ -45,9 +53,12 @@ func refresh(view: Dictionary, busy: bool) -> void:
 	if entry.is_empty():
 		hide()
 		return
-	heading.text = entry.title if view.phase == "event" else "A Memory Answers"
+	heading.text = entry.title if view.phase == "event" else "The First Delivery · Outcome"
+	var scene: Dictionary = scenes.get(view.event.get("id", ""), {})
+	if not scene.is_empty(): heading.text += " · Scroll to read"
+	var next_text := ""
 	if view.phase == "event":
-		description.text = entry.description
+		next_text = str(scene.get("discovery", entry.description))
 		if EventRules.resolution(view).get("allow_stash", false):
 			take.text = entry.take_label + (" · in storage" if view.event.selected == "take" else " · place in storage")
 		else:
@@ -59,8 +70,15 @@ func refresh(view: Dictionary, busy: bool) -> void:
 		leave.disabled = busy
 	else:
 		if view.event.get("method", "") == "resolution":
-			description.text = str(EventRules.resolution(view).result)
+			next_text = str(scene.get("listen", EventRules.resolution(view).result))
 		else:
-			description.text = entry.take_result + "  ·  HP %d / %d (heals up to %d)" % [view.health, view.config.max_health, entry.heal_amount] if view.event.outcome == "take" else entry.leave_result
+			next_text = entry.take_result + "  ·  HP %d / %d (heals up to %d)" % [view.health, view.config.max_health, entry.heal_amount] if view.event.outcome == "take" else entry.leave_result
+			if not scene.is_empty():
+				var ending := "fight_carried" if view.event.outcome == "take" else ("fight_stashed" if view.event.selected == "take" else "fight_left")
+				next_text = str(scene[ending])
 		take.hide()
 		leave.hide()
+	if next_text != _displayed_text:
+		_displayed_text = next_text
+		description.text = next_text
+		description_scroll.scroll_vertical = 0

@@ -48,7 +48,7 @@ func _label(parent: Node, key: String, value: String, rect: Rect2, font_size := 
 	label.text = value
 	label.position = rect.position
 	label.size = rect.size
-	# All body glyphs resolve to at least 8 native pixels in the 360p viewport.
+	# Keep body glyph sizes even for the bitmap font.
 	label.add_theme_font_size_override("font_size", maxi(16, ceili(font_size / 2.0) * 2))
 	label.add_theme_color_override("font_color", color)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -105,7 +105,7 @@ func _build() -> void:
 	reaction_scroll = ScrollContainer.new()
 	reaction_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	reaction_panel.add_child(reaction_scroll)
-	var reaction_text := _label(reaction_scroll, "enemy_reactions", "", Rect2(0, 0, 405, 0), 20, Color("ffe0c5"))
+	var reaction_text := _label(reaction_scroll, "enemy_reactions", "", Rect2(0, 0, 405, 0), 16, Color("ffe0c5"))
 	reaction_text.custom_minimum_size.x = 405
 	reaction_panel.hide()
 	board = InventoryBoard.new()

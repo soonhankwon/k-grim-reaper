@@ -78,6 +78,18 @@ func _run() -> void:
 	road.begin_feedback({"kind":"heal", "target":"player", "amount":7, "after":heal_after}, heal_before)
 	check(road.feedback_text == "+2", "healing displays actual capped recovery")
 	road.clear_feedback()
+	# Explanatory captions use only already-recorded event metadata.
+	road.begin_feedback({"kind":"action_started", "hazard_cost":1, "after":before}, before)
+	check(road.feedback_caption == "HAZARD +1 ENERGY" and not road.feedback_impact, "hazard cost waits for the matching event impact")
+	road.impact_feedback()
+	check(road.feedback_impact and road.feedback_caption == "HAZARD +1 ENERGY", "hazard cost is visible at impact")
+	road.clear_feedback()
+	road.begin_feedback({"kind":"damage", "source":"enemy", "target":"player", "trigger_key":"enemy/reaction", "health_damage":2, "after":before}, before)
+	check(road.feedback_caption == "COUNTER" and road.feedback_text == "-2", "recorded enemy reaction is identified at the player")
+	road.clear_feedback()
+	road.begin_feedback({"kind":"damage", "source":"enemy", "target":"player", "health_damage":2, "after":before}, before)
+	check(road.feedback_caption.is_empty(), "ordinary enemy damage is not labeled as a counter")
+	road.clear_feedback()
 	# A full reaction cascade keeps target, number and snapshot aligned at every impact.
 	var cascade := initial.duplicate(true)
 	cascade.reactions = [

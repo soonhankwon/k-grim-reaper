@@ -1,7 +1,6 @@
 extends Control
 
 const FONT = preload("res://assets/fonts/NotoSansKR.ttf")
-const PIXEL_FONT = preload("res://assets/fonts/Galmuri11-ui-360.res")
 const PAPER := Color("e5dfcb")
 const MUTED := Color("9caba6")
 const GOLD := Color("dac18c")
@@ -41,6 +40,7 @@ var guide_enabled := true
 var guide_forced := false
 var story_forced := false
 var story_entries: Array[Dictionary] = []
+var story_scenes: Dictionary = {}
 
 func _ready() -> void:
 	DisplayServer.window_set_title("Reaper's Bundle — First Delivery")
@@ -48,6 +48,9 @@ func _ready() -> void:
 	_build_theme()
 	_build_ui()
 	story_entries = StoryBook.load_entries(story_path)
+	if content_path == ItemCatalog.DEFAULT_PATH and story_path == StoryBook.PATH:
+		story_scenes = StoryBook.load_scenes("res://data/presentation/arang-scenes.json")
+	layout.encounter_event.scenes = story_scenes
 	session = BattleSession.new()
 	add_child(session)
 	session.presented.connect(_refresh)
@@ -64,6 +67,7 @@ func _ready() -> void:
 	sounds = PresentationSound.new()
 	add_child(sounds)
 	cinematics = SceneCinematics.new()
+	cinematics.story_dialogue_enabled = content_path == ItemCatalog.DEFAULT_PATH and story_path == StoryBook.PATH
 	cinematics.z_index = 10
 	cinematics.sound = sounds
 	layout.add_child(cinematics)
@@ -101,11 +105,11 @@ func _style(fill: Color, border: Color = Color("34474a")) -> StyleBoxFlat:
 
 func _build_theme() -> void:
 	theme = Theme.new()
-	var pixel_font := FontVariation.new()
-	pixel_font.base_font = PIXEL_FONT
-	pixel_font.fallbacks = [FONT]
-	theme.default_font = pixel_font
-	theme.set_font("font", "Button", pixel_font)
+	var readable_font := FontVariation.new()
+	readable_font.base_font = FONT
+	readable_font.variation_opentype = {0x77676874: 600} # OpenType wght axis
+	theme.default_font = readable_font
+	theme.set_font("font", "Button", readable_font)
 	theme.default_font_size = 18
 	theme.set_color("font_color", "Label", PAPER)
 	theme.set_color("font_color", "Button", PAPER)
@@ -350,6 +354,11 @@ func _refresh() -> void:
 	if teaser.visible:
 		var latest: Dictionary = story_unlocked.back()
 		teaser.text = "Story · %s  ›\n%s" % [latest.title, latest.teaser]
+		var scene: Dictionary = story_scenes.get(view.get("event", {}).get("id", ""), {})
+		if view.phase == "packing" and not scene.is_empty():
+			var event_view: Dictionary = view.get("event", {})
+			var approach := "approach_left" if event_view.get("status", "") == "left" else ("approach_packed" if view.packed_items.has(event_view.get("uid", "")) else "approach")
+			teaser.text = "Story · The voice in the grove  ›\n" + str(scene[approach])
 	layout.buttons.story.disabled = _save_blocked or story_unlocked.is_empty()
 	layout.buttons.story.text = "Story %d" % story_unlocked.size() if not story_unlocked.is_empty() else "Story"
 	labels.bag.text = "Bag   %d / %d" % [display_inventory.used_cells(), display_inventory.dimensions.x * display_inventory.dimensions.y]
@@ -361,7 +370,9 @@ func _refresh() -> void:
 		"battle": primary.text = "End Turn"
 		"reward": primary.text = "Confirm Reward" if display_inventory.is_packed(reward.uid) else "Place reward in bag"
 		"route": primary.text = "Choose a path below"
-		"event": primary.text = "Confirm Keepsake" if view.event.selected == "take" and (display_inventory.is_packed(view.event.uid) or resolution.get("allow_stash", false)) else "Place keepsake in bag"
+		"event":
+			if view.event.selected != "take": primary.text = "Choose below"
+			else: primary.text = "Confirm Keepsake" if display_inventory.is_packed(view.event.uid) or resolution.get("allow_stash", false) else "Place keepsake in bag"
 		"event_result": primary.text = "Finish Event"
 		"victory": primary.text = "Finish Delivery" if RouteRules.last(view) else ("Continue to Event" if not EventRules.due(view).is_empty() else ("Choose a Path" if RouteRules.enabled(view) and view.route.choice.is_empty() else "Next Encounter"))
 		"defeat": primary.text = "Return · Restart"
@@ -373,7 +384,8 @@ func _refresh() -> void:
 		labels.chapter.text = "Returned with your mentor"
 		labels.intent.text = "Rearrange your bag and try again."
 	elif view.phase == "victory":
-		labels.intent.text = "The way is clear · Arrange your bag"
+		labels.chapter.text = "Encounter complete · Prepare"
+		labels.intent.text = "Victory · Prepare your bag"
 	elif view.phase == "reward":
 		labels.chapter.text = "Stage %02d complete · Reward and preparation" % (RouteRules.step(view) + 1)
 	elif view.phase == "route":
@@ -402,7 +414,7 @@ func _refresh() -> void:
 	labels.help.text = "Click item: use · Hover: details · Right button: end turn" if view.phase == "battle" else "Drag or click empty cell: place · R: rotate · Ctrl+Z: undo · Esc / right click: cancel"
 	if view.phase == "reward": labels.help.text = "Switch rewards before confirming · Move items to storage for space · Ctrl+Z: undo"
 	if view.phase == "event": labels.help.text = "You may keep the evidence in storage. Put it in your bag before the next battle to use it." if resolution.get("allow_stash", false) else "The keepsake appears in storage. Place it in your bag to keep it, or leave it behind."
-	if view.phase == "event_result": labels.help.text = "Review the outcome, then finish the event."
+	if view.phase == "event_result": labels.help.text = "Scroll to read the outcome, then finish the event."
 	if view.phase == "route": labels.help.text = "Compare the paths and enemies. Your choice is saved automatically."
 	if not board.hazards.is_empty():
 		var hazard: Dictionary = board.hazards[0]
@@ -421,8 +433,9 @@ func _refresh() -> void:
 	resolution_button.visible = not _save_blocked and not session.is_busy() and view.phase == "battle" and not resolution.is_empty() and not event_entry.is_empty() and event.get("status", "") in ["carried", "left"] and RouteRules.step(view) == int(event_entry.step) + 1
 	var eligible: bool = event.get("status", "") == "carried" and view.packed_items.has(event.get("uid", ""))
 	resolution_button.disabled = not eligible
-	resolution_button.text = str(resolution.get("button", "")) if eligible else "Place evidence in your bag"
-	resolution_button.tooltip_text = str(resolution.get("button", "")) if eligible else str(resolution.get("unavailable", ""))
+	var evidence_left: bool = event.get("status", "") == "left"
+	resolution_button.text = str(resolution.get("button", "")) if eligible else ("Evidence left behind" if evidence_left else "Place evidence in your bag")
+	resolution_button.tooltip_text = str(resolution.get("button", "")) if eligible else ("You left the evidence in the grove." if evidence_left else str(resolution.get("unavailable", "")))
 	skip_button.disabled = not session.is_busy()
 	skip_button.visible = session.is_busy()
 	if session.is_busy(): primary.text = "Playing…"

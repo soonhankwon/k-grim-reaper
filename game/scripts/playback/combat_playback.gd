@@ -105,6 +105,9 @@ func begin_event(event: Dictionary) -> bool:
 	if seconds_per_step > 0.0 and is_instance_valid(vfx): _vfx_active = vfx.begin_feedback(event.duplicate(true), _view.duplicate(true))
 	var multiplier := 2.75 if event.get("kind", "") == "damage" else (2.5 if event.get("kind", "") in ["guard", "set_guard", "heal", "event_followup"] else 1.0)
 	_event_duration = float(cinema.duration_seconds) if _cinematic else (0.65 if _frost else maxf(0.0, seconds_per_step * multiplier))
+	if seconds_per_step > 0.0 and not _cinematic:
+		if event.get("kind", "") == "action_started" and int(event.get("hazard_cost", 0)) > 0: _event_duration = maxf(_event_duration, 0.85)
+		if event.get("kind", "") == "damage" and not str(event.get("trigger_key", "")).is_empty(): _event_duration = maxf(_event_duration, 0.85)
 	if _vfx_active and not _cinematic: _event_duration = maxf(_event_duration, 0.38)
 	return _event_duration > 0.0
 

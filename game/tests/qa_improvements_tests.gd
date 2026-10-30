@@ -13,7 +13,7 @@ func _run() -> void:
 	main.save_enabled = false
 	root.add_child(main)
 	await process_frame
-	check(main.theme.default_font is FontVariation and main.theme.default_font.base_font.resource_path.ends_with("Galmuri11-ui-360.res"), "English UI uses the unified 360p bitmap font")
+	check(main.theme.default_font is FontVariation and main.theme.default_font.base_font.resource_path.ends_with("NotoSansKR.ttf") and main.theme.default_font.variation_opentype.get(0x77676874) == 600, "game UI uses the readable outline font at a legible weight")
 	check(main.layout.guide.heading.text == "Prepare Your Bag", "shipping guide is English")
 	var legacy_name := "".join([String.chr(0xc800), String.chr(0xc2b9), " ", String.chr(0xbcf4), String.chr(0xb530), String.chr(0xb9ac), " — ", String.chr(0xccab), " ", String.chr(0xc778), String.chr(0xb3c4)])
 	check(ProjectSettings.get_setting("application/config/name") == legacy_name and ProjectSettings.globalize_path("user://").trim_suffix("/").get_file() == legacy_name, "legacy user data directory remains discoverable")

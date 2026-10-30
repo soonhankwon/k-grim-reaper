@@ -173,5 +173,17 @@ func _test_ui() -> void:
 	main.board.hover_cell = Vector2i(-100,-100)
 	main._select("sword")
 	check(main.labels.item_meta.text.contains("Energy 2"), "undo updates displayed cost")
+	check(main.session.submit({"type":"start"}).is_empty(), "begin frosted encounter")
+	main.session.skip_playback()
+	var before_cost: Dictionary = main.session.display_snapshot()
+	check(main.session.submit({"type":"use_item", "uid":"sword"}).is_empty(), "frosted attack is accepted")
+	main.session.playback.queue._process(0)
+	check(main.road.feedback_caption == "HAZARD +1 ENERGY" and not main.road.feedback_impact and main.session.display_snapshot().energy == before_cost.energy, "hazard caption waits for recorded cost impact")
+	check(main.session.playback._event_duration >= 0.85, "cost explanation remains readable")
+	var cost_command: CombatEventCommand = main.session.playback.queue._current
+	cost_command._impact()
+	check(main.road.feedback_impact and main.session.display_snapshot().energy == before_cost.energy - 2, "extra cost and displayed energy change together")
+	main.session.skip_playback()
+	check(main.road.feedback_caption.is_empty() and main.session.display_snapshot() == main.session.state_snapshot(), "skip clears the hazard caption and shows the committed result")
 	main.queue_free()
 	await process_frame

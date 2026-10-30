@@ -1,0 +1,12 @@
+{
+  "lost_keepsake": {
+    "discovery": "The guard’s tracks end at the edge of the grove. Beneath the bamboo lies a small mirror, its rim dark with dried blood.\n\nA woman’s voice slips between the stalks: “Please. Someone has to remember.” The mirror may be evidence, but taking it means making room if you want to carry it into the encounter.\n\nTake it into storage now, or leave it where it fell. You can move it into your bag before meeting the spirit.",
+    "approach": "Carry the mirror in your bag to show it to the spirit.",
+    "listen": "You hold out the mirror. The spirit’s raised hand stops.\n\n“My name is Arang,” she says. “I came here with someone I trusted. He attacked me, and left me among the bamboo. No one heard me call for help.”\n\nShe asks you to carry her account to the living, so her death will not be dismissed as another ghost story. You write down her words and keep the mirror as evidence.\n\nAs dawn touches the grove, Arang lowers her hand. “Thank you for listening.” She steps toward the light, leaving the next part of the truth in your hands.",
+    "fight_carried": "Arang falls silent beneath your final strike. The chill lifts, and the road to the magistrate is clear.\n\nIn your bag, the mirror catches the first light. You had a chance to show it to her, but her account is now beyond your reach. You record what you saw and preserve the mirror, hoping the living can learn what you could not.",
+    "fight_stashed": "Arang falls silent beneath your final strike. The chill lifts, and the road to the magistrate is clear.\n\nThe mirror is safe in storage, too far away to show her during the encounter. You recover it and record what you saw. Her own account remains unheard; perhaps the evidence can still help the living investigate.",
+    "fight_left": "Arang falls silent beneath your final strike. The chill lifts, and the road to the magistrate is clear.\n\nYou remember the mirror left beneath the bamboo and the voice that asked to be remembered. You record the encounter, but without her account or the evidence, much of her story remains unknown.",
+    "approach_left": "The mirror was left behind. Face the spirit ahead.",
+    "approach_packed": "The mirror is in your bag. You can show it to the spirit."
+  }
+}
