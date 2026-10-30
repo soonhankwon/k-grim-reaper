@@ -29,36 +29,36 @@ static func resolve(before: Dictionary, request: Dictionary) -> CombatResolution
 	var event: Dictionary = state.get("event", {})
 	var entry := definition(state)
 	if entry.is_empty() or request.get("event_id", "") != event.get("id", ""):
-		return _reject(before, "이전 사건이거나 존재하지 않는 사건입니다.")
+		return _reject(before, "This event is no longer available or does not exist.")
 	var message := ""
 	match request.get("type", ""):
 		"event_take":
-			if state.phase != "event" or event.status != "pending" or not event.selected.is_empty(): return _reject(before, "지금은 유품을 선택할 수 없습니다.")
+			if state.phase != "event" or event.status != "pending" or not event.selected.is_empty(): return _reject(before, "You cannot choose a keepsake now.")
 			event.selected = "take"
 			state.inventory_items[event.uid] = {"definition": entry.item_id, "origin": Vector2i(-1,-1), "rotation": 0}
-			message = "유품을 보관대에 두었습니다. 보관대에 둔 채 확정할 수 있습니다." if resolution(state).get("allow_stash", false) else "유품을 보관대에 두었습니다. 보따리에 넣은 뒤 확정하세요."
+			message = "The keepsake is in storage. You can confirm it there." if resolution(state).get("allow_stash", false) else "The keepsake is in storage. Put it in your bag to confirm."
 		"event_leave":
-			if state.phase != "event" or event.status != "pending": return _reject(before, "지금은 이 사건을 선택할 수 없습니다.")
+			if state.phase != "event" or event.status != "pending": return _reject(before, "You cannot choose this event now.")
 			state.inventory_items.erase(event.uid)
 			state.packed_items.erase(event.uid)
 			event.selected = "leave"
 			event.status = "left"
 			state.phase = "route"
-			message = "유품을 두고 갈림길로 향합니다."
+			message = "You leave the keepsake and head to the crossroads."
 		"event_confirm":
 			var allow_stash: bool = resolution(state).get("allow_stash", false)
-			if state.phase != "event" or event.status != "pending" or event.selected != "take" or (not allow_stash and not state.packed_items.has(event.uid)): return _reject(before, "유품을 보따리에 넣은 뒤 확정하세요.")
+			if state.phase != "event" or event.status != "pending" or event.selected != "take" or (not allow_stash and not state.packed_items.has(event.uid)): return _reject(before, "Place the keepsake in your bag before confirming.")
 			event.status = "carried"
 			state.phase = "route"
-			message = "유품을 챙겼습니다. 다음 길을 고르세요."
+			message = "Keepsake collected. Choose the next path."
 		"event_continue":
-			if state.phase != "event_result" or event.status != "resolved": return _reject(before, "지금은 사건을 이어갈 수 없습니다.")
+			if state.phase != "event_result" or event.status != "resolved": return _reject(before, "You cannot continue this event now.")
 			if not resolution(state).is_empty():
 				state.reward = {}
 				state.phase = "complete"
 			else: state.phase = "reward" if not state.reward.is_empty() else "victory"
-			message = "사건을 마치고 길을 이어갑니다."
-		_: return _reject(before, "알 수 없는 사건 선택입니다.")
+			message = "The event is over. Continue on your way."
+		_: return _reject(before, "Unknown event choice.")
 	state.messages.append(message)
 	if state.messages.size() > 30: state.messages.pop_front()
 	var record := {"id": 1, "cause_id": 0, "kind": request.type, "source": event.uid, "message": message, "after": state.duplicate(true)}

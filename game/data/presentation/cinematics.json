@@ -1,0 +1,37 @@
+{
+  "boss_intros": {
+    "spirit_2": {
+      "title": "ARANG",
+      "subtitle": "The Restless Spirit",
+      "epithet": "THE VENGEFUL SPIRIT"
+    },
+    "spirit_3": {
+      "title": "ARANG",
+      "subtitle": "The Restless Spirit",
+      "epithet": "THE VENGEFUL SPIRIT"
+    },
+    "yagwang": {
+      "title": "YAGWANGGWI",
+      "subtitle": "The Shoe Thief",
+      "epithet": "THE SHOE THIEF"
+    }
+  },
+  "memories": {
+    "spirit_2": {
+      "image": "res://assets/visuals/arang-memory-v1.png",
+      "caption": "That night, the wind in the bamboo swallowed even her scream.",
+      "focus": [
+        0.65,
+        0.79
+      ]
+    },
+    "spirit_3": {
+      "image": "res://assets/visuals/arang-memory-v1.png",
+      "caption": "That night, the wind in the bamboo swallowed even her scream.",
+      "focus": [
+        0.65,
+        0.79
+      ]
+    }
+  }
+}

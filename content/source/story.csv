@@ -1,5 +1,5 @@
 id,min_completed,title,teaser,text
-assignment,0,밀양의 첫날밤,새 사또를 지켜 달라는 첫 임무.,"앞서 부임한 사또들이 첫날밤 의문의 죽음을 맞았다. 신입 차사는 네 번째 사또를 지키고, 관아에 맴도는 원혼의 사연을 살피라는 명을 받는다."
-first_trace,1,대숲에 남은 흔적,원혼이 전하려는 이야기를 찾아야 한다.,겁에 질린 포졸을 진정시킨 차사는 대숲에서 낯선 흔적을 발견한다. 동경을 챙긴다면 보관대에 두거나 보따리에 넣을 수 있다.
-second_trace,2,아랑과 마주하다,아랑이 무엇을 전하려 했는지 생각한다.,아랑은 두려움의 대상이기 전에 자신의 억울함을 전하고 싶은 사람이다. 증거를 보따리에 휴대했다면 전투 중 보여 주고 그녀의 말을 들을 수 있다.
-completion,3,첫 번째 밤의 끝,차사는 이 밤의 선택을 명부에 적는다.,밀양의 첫날밤이 끝났다. 차사는 자신이 보고 들은 일과 미처 듣지 못한 사연을 명부에 남긴다.
+assignment,0,The First Night in Miryang,Your first task: protect the new magistrate.,The previous magistrates died mysteriously on their first night. A rookie reaper is sent to protect the fourth and investigate the spirit haunting the office.
+first_trace,1,A Trace in the Bamboo,Find the story the spirit wants to tell.,"After calming the terrified guard, the reaper discovers a trace in the grove. The mirror can be kept in storage or placed in the bag."
+second_trace,2,Meeting Arang,Consider what Arang wanted to reveal.,Arang is more than a fearsome spirit: she wants someone to hear the injustice she suffered. Bring the evidence in your bag to show it to her.
+completion,3,The End of the First Night,Record the choices of the night.,"The first night in Miryang is over. The reaper records what was seen and heard, and the story left untold."

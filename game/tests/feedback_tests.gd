@@ -59,7 +59,7 @@ func _run() -> void:
 	blocked.enemy_guard = 10
 	var guarded := CombatSimulator.resolve(blocked, {"type":"use_item", "uid":"sword"}).events()
 	road.begin_feedback(guarded[-1], guarded[-2].after)
-	check(road.feedback_text == "막음 6" and not road.feedback_impact, "blocked damage is represented separately from health damage")
+	check(road.feedback_text == "Blocked 6" and not road.feedback_impact, "blocked damage is represented separately from health damage")
 	road.impact_feedback()
 	check(road.feedback_target == "enemy" and road.feedback_impact, "blocked hit is anchored to the defender")
 	road.clear_feedback()
@@ -70,7 +70,7 @@ func _run() -> void:
 	var guard_after := before.duplicate(true)
 	guard_after.guard += 5
 	road.begin_feedback({"kind":"guard", "target":"player", "after":guard_after}, before)
-	check(road.feedback_text == "방어 +5", "guard text reflects the actual snapshot delta")
+	check(road.feedback_text == "Block +5", "guard text reflects the actual snapshot delta")
 	var heal_before := before.duplicate(true)
 	heal_before.health = heal_before.config.max_health - 2
 	var heal_after := heal_before.duplicate(true)
@@ -98,7 +98,7 @@ func _run() -> void:
 	check(shown.size() == cascade_events.size() + 1, "cascade presents every recorded snapshot and one final reconciliation")
 	if shown.size() == cascade_events.size() + 1:
 		for i in cascade_events.size(): check(shown[i].snapshot == cascade_events[i].after and shown[i].impact, "cascade impact follows its event snapshot")
-		check(shown[1].target == "enemy" and shown[1].text == "-6" and shown[2].target == "player" and shown[2].text == "-3" and shown[3].text == "방어 +5", "hit, reflection and guard feedback follow FIFO targets")
+		check(shown[1].target == "enemy" and shown[1].text == "-6" and shown[2].target == "player" and shown[2].text == "-3" and shown[3].text == "Block +5", "hit, reflection and guard feedback follow FIFO targets")
 	playback.seconds_per_step = 0.08
 	playback.reset(before)
 	playback.play(batch)

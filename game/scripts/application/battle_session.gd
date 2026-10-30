@@ -10,6 +10,7 @@ var playback: CombatPlayback
 var _resolver: CombatResolver
 var _submitting := false
 var save_service: SaveService
+var _ruleset: RefCounted
 
 func _ready() -> void:
 	playback = CombatPlayback.new()
@@ -20,9 +21,17 @@ func _ready() -> void:
 	playback.settled.connect(_on_settled)
 	playback.recovered.connect(func(reason: String): playback_recovered.emit(reason))
 
+func install_unsaved_ruleset(ruleset: RefCounted) -> bool:
+	if save_service != null or is_busy() or _ruleset != null or ruleset == null: return false
+	if not ruleset.has_method("resolve") or not ruleset.has_method("use_error"): return false
+	if _resolver != null and _resolver.phase != "packing": return false
+	_ruleset = ruleset
+	if _resolver != null: _resolver.ruleset = ruleset
+	return true
+
 func reset(inventory: InventoryModel, initial: Dictionary = {}) -> void:
 	_submitting = true
-	_resolver = CombatResolver.new(inventory, initial)
+	_resolver = CombatResolver.new(inventory, initial, _ruleset)
 	inventory.locked = _resolver.phase in ["battle", "route", "event_result", "defeat", "complete"]
 	playback.reset(_resolver.snapshot())
 	_submitting = false
@@ -32,7 +41,8 @@ func is_busy() -> bool:
 	return _submitting or playback.is_busy()
 
 func prepare_new(inventory: InventoryModel) -> String:
-	if _submitting: return "현재 요청이 끝난 뒤 다시 시작하세요."
+	if _ruleset != null and save_service != null: return "Saving is unavailable with experimental rules."
+	if _submitting: return "Wait for the current action before restarting."
 	if save_service == null: return ""
 	_submitting = true
 	var next := CombatResolver.new(inventory)
@@ -41,7 +51,8 @@ func prepare_new(inventory: InventoryModel) -> String:
 	return error
 
 func prepare_archived_new(inventory: InventoryModel) -> String:
-	if _submitting or save_service == null: return "저장 파일을 다시 확인해 주세요."
+	if _ruleset != null: return "Saving is unavailable with experimental rules."
+	if _submitting or save_service == null: return "Please check the save file again."
 	_submitting = true
 	var next := CombatResolver.new(inventory)
 	var error := save_service.archive_and_start(next.snapshot(), inventory, [])
@@ -49,7 +60,8 @@ func prepare_archived_new(inventory: InventoryModel) -> String:
 	return error
 
 func submit(request: Dictionary) -> String:
-	if is_busy(): return "연출이 끝난 뒤 행동하세요."
+	if _ruleset != null and save_service != null: return "Saving is unavailable with experimental rules."
+	if is_busy(): return "Wait for the animation to finish."
 	_submitting = true
 	var result := _resolver.simulate(request)
 	if not result.error.is_empty():
@@ -60,7 +72,7 @@ func submit(request: Dictionary) -> String:
 		var error := save_service.write_slot(result.after(), _resolver.inventory, history)
 		if not error.is_empty():
 			_submitting = false
-			return "저장 실패 · 행동을 적용하지 않았습니다: " + error
+			return "Save failed · action not applied: " + error
 	_resolver.commit(result, request)
 	_resolver.inventory.locked = true
 	playback.play(result)
@@ -77,7 +89,8 @@ func undo_layout() -> String:
 	return _layout_transaction("undo", "", Vector2i.ZERO, 0)
 
 func _layout_transaction(kind: String, uid: String, origin: Vector2i, rotation: int) -> String:
-	if is_busy(): return "연출이 끝난 뒤 보따리를 정리하세요."
+	if _ruleset != null and save_service != null: return "Saving is unavailable with experimental rules."
+	if is_busy(): return "Wait for the animation before rearranging your bag."
 	_submitting = true
 	var model := _resolver.inventory
 	var candidate := model.copy_for_transaction()
@@ -87,10 +100,10 @@ func _layout_transaction(kind: String, uid: String, origin: Vector2i, rotation: 
 			error = candidate.placement_error(uid, origin, rotation)
 			if error.is_empty(): candidate.place(uid, origin, rotation)
 		"stash":
-			if not candidate.move_to_stash(uid): error = "보따리 안의 물건을 선택하세요."
+			if not candidate.move_to_stash(uid): error = "Select an item in the bag."
 		"undo":
-			if not candidate.undo(): error = "되돌릴 배치가 없습니다."
-		_: error = "알 수 없는 배치 명령입니다."
+			if not candidate.undo(): error = "No placement to undo."
+		_: error = "Unknown placement command."
 	if error.is_empty() and (candidate.items != model.items or candidate.history != model.history):
 		var after := _resolver.snapshot()
 		after.inventory_items = candidate.items.duplicate(true)
@@ -100,13 +113,13 @@ func _layout_transaction(kind: String, uid: String, origin: Vector2i, rotation: 
 			model.items = candidate.items
 			model.history = candidate.history
 			model.changed.emit()
-		else: error = "저장 실패 · 배치를 적용하지 않았습니다: " + error
+		else: error = "Save failed · placement not applied: " + error
 	_submitting = false
 	if error.is_empty(): refresh_layout()
 	return error
 
 func use_error(uid: String) -> String:
-	return "연출 재생 중입니다." if is_busy() else _resolver.use_error(uid)
+	return "Animation in progress." if is_busy() else _resolver.use_error(uid)
 
 func display_snapshot() -> Dictionary:
 	return playback.snapshot()
@@ -114,8 +127,8 @@ func display_snapshot() -> Dictionary:
 func preview_end_turn() -> CombatResolution:
 	# Preview is based exclusively on the displayed state and never commits or saves.
 	var view := display_snapshot()
-	if is_busy(): return CombatResolution.new(view, view, [], "연출이 끝난 뒤 확인할 수 있습니다.")
-	return CombatSimulator.resolve(view, {"type": "end_turn"})
+	if is_busy(): return CombatResolution.new(view, view, [], "Wait for the animation to finish.")
+	return CombatSimulator.resolve(view, {"type": "end_turn"}) if _ruleset == null else _ruleset.resolve(view, {"type": "end_turn"})
 
 func state_snapshot() -> Dictionary:
 	# For persistence/debug/tests only; rendering must use display_snapshot().

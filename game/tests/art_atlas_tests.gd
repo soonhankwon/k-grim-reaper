@@ -14,12 +14,16 @@ func _initialize() -> void:
 	check(content.error.is_empty(), "shipping content loads for visual validation")
 	if content.error.is_empty():
 		var items := PresentationArt.ITEMS.get_image()
+		var model := ItemCatalog.create_inventory()
 		for row: Dictionary in content.raw.items:
 			_validate_region(items, PresentationArt.item_region(row.icon_id), "item " + row.icon_id)
+			var definition: ItemData = model.definitions[row.id]
+			check(PresentationArt.item_region(row.icon_id).size == ItemIcons.extent(definition) / 24.0 * 32.0, "item footprint uses 32px cells: " + row.icon_id)
 		var actor_ids: Dictionary = {content.raw.rules[0].player_visual:true}
 		for row: Dictionary in content.raw.encounters: actor_ids[row.visual_id] = true
 		for id: String in actor_ids:
 			_validate_region(PresentationArt.actor_texture(id).get_image(), PresentationArt.actor_region(id), "actor " + id)
+			check(PresentationArt.actor_region(id).size == Vector2(75, 66), "actor fits logical combat sprite area: " + id)
 	print("ART ATLAS TESTS: %d checks, %d failures" % [checks, failures])
 	quit(1 if failures else 0)
 

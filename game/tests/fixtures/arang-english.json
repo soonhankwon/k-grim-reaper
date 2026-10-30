@@ -1,0 +1,106 @@
+{
+  "items": {
+    "sword": {
+      "display_name": "Sain Sword",
+      "description": "An old sword strengthened by items directly beside it."
+    },
+    "seal": {
+      "display_name": "Sealing Talisman",
+      "description": "Strengthens adjacent weapons. Diagonal cells do not count."
+    },
+    "lantern": {
+      "display_name": "Soul Lantern",
+      "description": "Lights the way for the belongings of the dead."
+    },
+    "ring": {
+      "display_name": "Jade Ring",
+      "description": "A keepsake holding a final, unfulfilled promise."
+    },
+    "hat": {
+      "display_name": "Worn Gat",
+      "description": "Blocks damage until the next enemy action. Its wide brim takes up space."
+    },
+    "bell": {
+      "display_name": "Guide Bell",
+      "description": "A compact extra attack. It has no weapon tag and cannot receive talisman bonuses."
+    },
+    "yakgwa": {
+      "display_name": "Small Yakgwa",
+      "description": "A one-use honey pastry. Once eaten, its space is freed permanently."
+    },
+    "rope": {
+      "display_name": "Binding Rope",
+      "description": "A bent weapon. Rotate it to fit gaps and use adjacency bonuses."
+    },
+    "sandals": {
+      "display_name": "Straw Shoes",
+      "description": "A compact defense tool that leaves more room for other items."
+    },
+    "order": {
+      "display_name": "Reaper Writ",
+      "description": "A delivery order with a powerful attack that requires careful energy management."
+    },
+    "coin": {
+      "display_name": "Forgotten Coin",
+      "description": "A keepsake that gives a little defense without spending energy."
+    },
+    "mirror": {
+      "display_name": "Bloodstained Mirror",
+      "description": "A mirror found in the bamboo grove, holding someone's last memories."
+    }
+  },
+  "encounters": {
+    "gate_1": {
+      "name": "Terrified Guard"
+    },
+    "gate_2": {
+      "name": "Arang, Restless Spirit"
+    },
+    "gate_3": {
+      "name": "Arang, Restless Spirit"
+    }
+  },
+  "routes": {
+    "mist_path": {
+      "name": "Follow the Bamboo Grove",
+      "description": "Meet Arang beyond the wind-swept bamboo grove."
+    },
+    "moon_path": {
+      "name": "Pass the Moonlit Pond",
+      "description": "Pass the moonlit pond on your way to Arang."
+    }
+  },
+  "events": {
+    "lost_keepsake": {
+      "title": "Evidence in the Grove",
+      "description": "A bloodstained mirror lies in the bamboo grove. Will you keep it as evidence?",
+      "take_label": "Take the mirror",
+      "leave_label": "Leave it",
+      "take_result": "You subdued Arang by force. The mirror remains, but her story was left untold.",
+      "leave_result": "You subdued Arang by force. Her story remains untold."
+    }
+  },
+  "resolutions": {
+    "evidence_resolution": {
+      "message": "Arang recognizes the mirror and begins to speak.",
+      "result": "Arang recognizes the mirror and tells you what happened. You record her words and promise to reveal the truth. She nods and sets out on her own.",
+      "button": "Show the mirror and listen",
+      "unavailable": "Place the evidence in your bag to hear Arang's story.",
+      "completion_title": "Arang's Night · First Delivery Complete"
+    }
+  },
+  "tags": {
+    "weapon": {
+      "label": "Weapon"
+    },
+    "keepsake": {
+      "label": "Keepsake"
+    },
+    "lantern": {
+      "label": "Lantern"
+    },
+    "talisman": {
+      "label": "Talisman"
+    }
+  }
+}

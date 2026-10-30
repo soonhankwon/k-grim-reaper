@@ -10,6 +10,7 @@ signal synergy_changed
 
 const CELL := 76.0
 const PAD := Vector2(16, 10)
+const THREAD_COLORS := {"add":Color("e6b85a"), "multiply":Color("65c6e7"), "condition":Color("d86f62")}
 var cell_size: float:
 	get: return CELL if model == null else minf(380.0 / model.dimensions.x, 304.0 / model.dimensions.y)
 var model: InventoryModel
@@ -20,13 +21,29 @@ var pressed_uid := ""
 var press_point := Vector2.ZERO
 var grab_offset := Vector2i.ZERO
 var dragging := false
+var drag_pointer := Vector2.ZERO
+var drag_anchor := Vector2.ZERO
+var placement_queue: ActionQueue
+var placement_uid := ""
+var placement_from := Vector2.ZERO
+var placement_progress := 0.0
+var placement_new_link := false
 var used: Dictionary = {}
 var presentation_busy := false
+var display_state: Dictionary = {}
+var hazards: Array = []
+var frost_progress := 1.0
+# Optional presentation-only telegraphs supplied by the displayed view.
+var threat_cells: Array[Vector2i] = []
+var target_cells: Array[Vector2i] = []
+var target_preview := false
 var _synergy_key: Dictionary = {}
 var _synergy_cache: Dictionary = {}
 
 func _ready() -> void:
 	custom_minimum_size = Vector2(412, 324)
+	placement_queue = ActionQueue.new()
+	add_child(placement_queue)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
 	mouse_exited.connect(func():
@@ -36,6 +53,23 @@ func _ready() -> void:
 			synergy_changed.emit()
 			queue_redraw()
 	)
+
+func begin_frost_feedback(event: Dictionary, before: Dictionary) -> bool:
+	if event.get("kind", "") != "encounter_prepared": return false
+	var after: Dictionary = event.get("after", {})
+	var next := InventoryRules.active_hazards(after)
+	if next.is_empty() or next == InventoryRules.active_hazards(before): return false
+	frost_progress = 0.0
+	queue_redraw()
+	return true
+
+func set_frost_progress(value: float) -> void:
+	frost_progress = clampf((value - 0.5) * 2.0, 0.0, 1.0)
+	queue_redraw()
+
+func clear_frost_feedback() -> void:
+	frost_progress = 1.0
+	queue_redraw()
 
 func cell_at(point: Vector2) -> Vector2i:
 	return Vector2i(floori((point.x - PAD.x) / cell_size), floori((point.y - PAD.y) / cell_size))
@@ -52,6 +86,7 @@ func _preview_active() -> bool:
 	return dragging or hovered.is_empty() or (hovered == selected and pending_rotation != int(model.items[selected].rotation))
 
 func select(uid: String, turn: int) -> void:
+	if uid != selected or turn != pending_rotation: stop_placement_feedback()
 	selected = uid
 	pending_rotation = turn
 	synergy_changed.emit()
@@ -66,9 +101,37 @@ func cancel_motion() -> void:
 
 func begin_external_drag(uid: String, viewport_position: Vector2) -> void:
 	if model == null or model.locked: return
+	stop_placement_feedback()
 	pressed_uid = uid
 	press_point = viewport_position
 	grab_offset = Vector2i.ZERO
+	drag_anchor = Vector2.ONE * cell_size * 0.5
+	drag_pointer = get_global_transform_with_canvas().affine_inverse() * viewport_position
+
+func start_placement_feedback(uid: String, previous_origin: Vector2i, new_link: bool) -> void:
+	stop_placement_feedback()
+	if model == null or not model.is_packed(uid): return
+	placement_uid = uid
+	placement_from = drag_pointer - drag_anchor * 1.1 if dragging else (PAD + Vector2(previous_origin) * cell_size if previous_origin.x >= 0 else PAD + Vector2(model.items[uid].origin) * cell_size)
+	placement_progress = 0.0
+	placement_new_link = new_link
+	var commands: Array[ActionCommand] = [LayoutFeedbackCommand.new(self)]
+	if not placement_queue.start(commands): clear_placement_feedback()
+	queue_redraw()
+
+func set_placement_feedback_progress(value: float) -> void:
+	placement_progress = clampf(value, 0.0, 1.0)
+	queue_redraw()
+
+func clear_placement_feedback() -> void:
+	placement_uid = ""
+	placement_progress = 0.0
+	placement_new_link = false
+	queue_redraw()
+
+func stop_placement_feedback() -> void:
+	if placement_queue != null: placement_queue.cancel()
+	clear_placement_feedback()
 
 func _gui_input(event: InputEvent) -> void:
 	if model == null:
@@ -92,9 +155,12 @@ func _gui_input(event: InputEvent) -> void:
 				else:
 					picked.emit(uid)
 					if not model.locked:
+						stop_placement_feedback()
 						pressed_uid = uid
 						press_point = get_global_transform_with_canvas() * event.position
 						grab_offset = cell - Vector2i(model.items[uid].origin)
+						drag_anchor = event.position - PAD - Vector2(model.items[uid].origin) * cell_size
+						drag_pointer = event.position
 			elif not selected.is_empty() and not model.locked:
 				placement_requested.emit(selected, cell, pending_rotation)
 			accept_event()
@@ -103,10 +169,11 @@ func _input(event: InputEvent) -> void:
 	if model == null or model.locked:
 		return
 	if event is InputEventMouseMotion and not pressed_uid.is_empty():
+		drag_pointer = get_global_transform_with_canvas().affine_inverse() * event.position
 		if event.position.distance_to(press_point) > 6:
 			dragging = true
 		if dragging:
-			hover_cell = cell_at(get_global_transform_with_canvas().affine_inverse() * event.position)
+			hover_cell = cell_at(drag_pointer)
 			preview_changed.emit(preview_origin())
 			synergy_changed.emit()
 			queue_redraw()
@@ -154,36 +221,37 @@ func _closest_cells(first: Array, second: Array, range_mode: String) -> Array[Ve
 				best = [a, b]
 	return best
 
-func _draw_links(view: Dictionary, font: Font) -> void:
+func _draw_links(view: Dictionary) -> void:
 	var groups: Dictionary = {}
 	var highlighted: Dictionary = {}
 	for link: Dictionary in view.links:
 		highlighted[link.source] = true
 		highlighted[link.target] = true
-		var key := str(link.source) + "/" + str(link.target) + "/" + str(link.range)
-		if not groups.has(key): groups[key] = {"source":link.source, "target":link.target, "range":link.range, "symbols":[]}
-		var symbol: String = {"add":"+", "multiply":"×", "condition":"○"}[link.kind]
-		if symbol not in groups[key].symbols: groups[key].symbols.append(symbol)
-	var outline := Color("82d8cb") if view.mode == "preview" else Color("f4d57d")
+		var key := JSON.stringify([link.source, link.target, link.range, link.kind])
+		if not groups.has(key): groups[key] = {"source":link.source, "target":link.target, "range":link.range, "kind":link.kind}
+	var pulse := sin(placement_progress * PI) if placement_new_link and not placement_uid.is_empty() and view.mode == "current" else 0.0
+	var outline := Color("82d8cb") if view.mode == "preview" else Color("f4d57d").lerp(Color("fff6cf"), pulse * 0.65)
+	var outline_width := 2.0 + pulse * 2.0
 	for uid: String in highlighted:
 		var cells: Array = view.items[uid].cells
 		for point: Vector2i in cells:
 			var rect := Rect2(PAD + Vector2(point) * cell_size, Vector2.ONE * cell_size)
 			var start := rect.position + Vector2(5,5)
 			var end := rect.end - Vector2(5,5)
-			if not cells.has(point + Vector2i.LEFT): draw_line(start, Vector2(start.x,end.y), outline, 2)
-			if not cells.has(point + Vector2i.RIGHT): draw_line(Vector2(end.x,start.y), end, outline, 2)
-			if not cells.has(point + Vector2i.UP): draw_line(start, Vector2(end.x,start.y), outline, 2)
-			if not cells.has(point + Vector2i.DOWN): draw_line(Vector2(start.x,end.y), end, outline, 2)
+			if not cells.has(point + Vector2i.LEFT): draw_line(start, Vector2(start.x,end.y), outline, outline_width)
+			if not cells.has(point + Vector2i.RIGHT): draw_line(Vector2(end.x,start.y), end, outline, outline_width)
+			if not cells.has(point + Vector2i.UP): draw_line(start, Vector2(end.x,start.y), outline, outline_width)
+			if not cells.has(point + Vector2i.DOWN): draw_line(Vector2(start.x,end.y), end, outline, outline_width)
 	for group: Dictionary in groups.values():
+		var color: Color = THREAD_COLORS[group.kind]
+		if view.mode == "preview": color = color.lerp(Color("e4eee2"), 0.25)
 		if group.source == group.target:
 			var cells: Array = view.items[group.source].cells
 			if cells.is_empty(): continue
-			var anchor := PAD + Vector2(cells[0]) * cell_size + Vector2(4, cell_size - 22)
-			var text := "".join(group.symbols)
-			var width := maxf(20, font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 8)
-			draw_rect(Rect2(anchor, Vector2(width, 18)), Color("202526"))
-			draw_string(font, anchor + Vector2(0, 14), text, HORIZONTAL_ALIGNMENT_CENTER, width, 13, Color("fff1c8"))
+			var knot_offset: float = {"add":0.0, "multiply":10.0, "condition":20.0}[group.kind]
+			var knot := PAD + Vector2(cells[0]) * cell_size + Vector2(8 + knot_offset, cell_size - 10)
+			draw_circle(knot, 5, Color("27201f"))
+			draw_circle(knot, 3, color)
 			continue
 		var points := _closest_cells(view.items[group.source].cells, view.items[group.target].cells, group.range)
 		if points.size() != 2: continue
@@ -192,19 +260,19 @@ func _draw_links(view: Dictionary, font: Font) -> void:
 		var direction := (b - a).normalized()
 		var start := a + direction * cell_size * 0.35
 		var finish := b - direction * cell_size * 0.35
-		var color := Color("82d8cb") if view.mode == "preview" else Color("f4d57d")
-		draw_line(start, finish, Color("202526"), 7)
-		if view.mode == "preview":
-			for step in range(0, 10, 2):
-				draw_line(start.lerp(finish, float(step) / 10.0), start.lerp(finish, float(step + 1) / 10.0), color, 3)
-		else: draw_line(start, finish, color, 3)
 		var normal := Vector2(-direction.y, direction.x)
-		draw_colored_polygon(PackedVector2Array([finish, finish - direction * 8 + normal * 5, finish - direction * 8 - normal * 5]), color)
-		var symbol_text := "".join(group.symbols)
-		var middle := (start + finish) / 2
-		var width := maxf(20, font.get_string_size(symbol_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 13).x + 8)
-		draw_rect(Rect2(middle - Vector2(width / 2, 9), Vector2(width, 18)), Color("202526"))
-		draw_string(font, middle + Vector2(-width / 2, 5), symbol_text, HORIZONTAL_ALIGNMENT_CENTER, width, 13, Color("fff1c8"))
+		var curve := PackedVector2Array()
+		var bend := -5.0 if hash(str(group.source) + str(group.target)) % 2 == 0 else 5.0
+		var offset: float = {"add":-5.0, "multiply":5.0, "condition":0.0}[group.kind]
+		for step in 9:
+			var t := float(step) / 8.0
+			curve.append(start.lerp(finish, t) + normal * (sin(t * PI) * bend + offset))
+		draw_polyline(curve, Color("28201d"), 7)
+		draw_polyline(curve, color, 3)
+		# A small trailing thread and a larger knot indicate source and target.
+		draw_circle(curve[0], 2, color.darkened(0.25))
+		draw_circle(curve[curve.size() - 1], 4, Color("28201d"))
+		draw_circle(curve[curve.size() - 1], 2, color)
 
 func _draw() -> void:
 	if model == null:
@@ -213,7 +281,10 @@ func _draw() -> void:
 	for y in model.dimensions.y:
 		for x in model.dimensions.x:
 			var rect := Rect2(PAD + Vector2(x, y) * cell_size, Vector2.ONE * cell_size)
-			draw_rect(rect.grow(-2), Color("c4b198"))
+			var frost := false
+			for hazard: Dictionary in hazards:
+				if Vector2i(x, y) in hazard.cells: frost = true
+			draw_rect(rect.grow(-2), Color("aebeb5") if frost else Color("c4b198"))
 			draw_rect(rect.grow(-2), Color("675343"), false, 1)
 	for uid: String in model.items:
 		if not model.is_packed(uid):
@@ -246,14 +317,56 @@ func _draw() -> void:
 					else:
 						draw_line(Vector2(from.x, to.y), to, edge, 2)
 		var origin := PAD + Vector2(model.items[uid].origin) * cell_size
-		ItemIcons.draw_icon(self, item, origin, cell_size / 24.0, int(model.items[uid].rotation), exhausted)
+		if uid != placement_uid:
+			ItemIcons.draw_icon(self, item, origin, cell_size / 24.0, int(model.items[uid].rotation), exhausted or (dragging and uid == selected))
 		if EffectApplier.has_trigger(ItemCodec.item(item, []), "use") and not exhausted:
-			draw_rect(Rect2(origin + Vector2(cell_size - 20, 4), Vector2(16, 18)), Color("313930"))
-			draw_string(font, origin + Vector2(cell_size - 17, 18), str(item.cost), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color("eed99b"))
+			var value: Dictionary = display_state.get("packed_items", {}).get(uid, ItemCodec.item(item, points))
+			var cost := InventoryRules.action_cost(display_state, value) if not display_state.is_empty() else {"total":item.cost, "extra":0}
+			var width := maxf(16, font.get_string_size(str(cost.total), HORIZONTAL_ALIGNMENT_LEFT, -1, 12).x + 6)
+			var anchor := origin + Vector2(cell_size - width - 4, 4)
+			draw_rect(Rect2(anchor, Vector2(width, 18)), Color("313930"))
+			draw_string(font, anchor + Vector2(0, 16), str(cost.total), HORIZONTAL_ALIGNMENT_CENTER, width, 16, Color("a8eaf4") if cost.extra > 0 else Color("eed99b"))
 		if exhausted:
-			draw_string(font, origin + Vector2(7, cell_size - 8), "사용", HORIZONTAL_ALIGNMENT_LEFT, -1, 11, Color("b6bdb4"))
+			draw_string(font, origin + Vector2(7, cell_size - 8), "Use", HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color("b6bdb4"))
+	for point: Vector2i in threat_cells:
+		if point.x < 0 or point.y < 0 or point.x >= model.dimensions.x or point.y >= model.dimensions.y: continue
+		var rect := Rect2(PAD + Vector2(point) * cell_size, Vector2.ONE * cell_size)
+		draw_line(rect.position + Vector2(6, cell_size - 6), rect.end - Vector2(6, 6), Color("df9073"), 2)
+	for hazard: Dictionary in hazards:
+		for point: Vector2i in hazard.cells:
+			var rect := Rect2(PAD + Vector2(point) * cell_size, Vector2.ONE * cell_size)
+			var edge := rect.grow(-4)
+			var length := edge.size.x * frost_progress
+			var ice := Color("9de1ee")
+			draw_line(edge.position, edge.position + Vector2(length, 0), ice, 2)
+			draw_line(edge.end, edge.end - Vector2(length, 0), ice, 2)
+			draw_line(edge.position, edge.position + Vector2(0, edge.size.y * frost_progress), ice, 2)
+			draw_line(edge.end, edge.end - Vector2(0, edge.size.y * frost_progress), ice, 2)
+			for i in 4:
+				var x := edge.position.x + 7.0 + i * 16.0
+				if x > edge.position.x + length: continue
+				var tip := Vector2(x, edge.position.y)
+				draw_line(tip, tip + Vector2(3, 8 * frost_progress), Color("ddfaff"), 2)
+				draw_line(tip + Vector2(2, 5 * frost_progress), tip + Vector2(7, 6 * frost_progress), ice, 1)
+			var center := rect.position + Vector2(11, 12)
+			draw_line(center + Vector2(-5,0) * frost_progress, center + Vector2(5,0) * frost_progress, Color("ddfaff"), 2)
+			draw_line(center + Vector2(0,-5) * frost_progress, center + Vector2(0,5) * frost_progress, Color("ddfaff"), 2)
 	var synergy := synergy_view()
-	if synergy.mode in ["current", "preview"] and font != null: _draw_links(synergy, font)
+	if synergy.mode in ["current", "preview"]: _draw_links(synergy)
+	for point: Vector2i in target_cells:
+		if point.x < 0 or point.y < 0 or point.x >= model.dimensions.x or point.y >= model.dimensions.y: continue
+		var rect := Rect2(PAD + Vector2(point) * cell_size, Vector2.ONE * cell_size)
+		var start := rect.position + Vector2(6, 6)
+		var end := rect.end - Vector2(6, 6)
+		var color := Color("f4b15b") if target_preview else Color("fa7d64")
+		if not target_cells.has(point + Vector2i.LEFT): draw_line(start, Vector2(start.x, end.y), color, 3)
+		if not target_cells.has(point + Vector2i.RIGHT): draw_line(Vector2(end.x, start.y), end, color, 3)
+		if not target_cells.has(point + Vector2i.UP): draw_line(start, Vector2(end.x, start.y), color, 3)
+		if not target_cells.has(point + Vector2i.DOWN): draw_line(Vector2(start.x, end.y), end, color, 3)
+		if font != null and point == target_cells[0]:
+			var badge := start + Vector2(2, 2)
+			draw_rect(Rect2(badge, Vector2(20, 20)), Color("392426"))
+			draw_string(font, badge + Vector2(0, 16), "!", HORIZONTAL_ALIGNMENT_CENTER, 20, 16, color)
 	if _preview_active():
 		var origin := preview_origin()
 		var valid := model.placement_error(selected, origin, pending_rotation).is_empty()
@@ -264,3 +377,16 @@ func _draw() -> void:
 				var rect := Rect2(PAD + Vector2(target) * cell_size, Vector2.ONE * cell_size)
 				draw_rect(rect.grow(-4), Color(tint, 0.19))
 				draw_rect(rect.grow(-4), tint, false, 2)
+	if dragging and model.items.has(selected):
+		_draw_lifted(selected, drag_pointer - drag_anchor * 1.1, pending_rotation, 1.1)
+	elif not placement_uid.is_empty() and model.items.has(placement_uid) and model.is_packed(placement_uid):
+		var destination := PAD + Vector2(model.items[placement_uid].origin) * cell_size
+		var eased := 1.0 - pow(1.0 - placement_progress, 3.0)
+		_draw_lifted(placement_uid, placement_from.lerp(destination, eased), int(model.items[placement_uid].rotation), lerpf(1.1, 1.0, eased))
+
+func _draw_lifted(uid: String, origin: Vector2, rotation: int, scale_factor: float) -> void:
+	var item := model.definition(uid)
+	for cell: Vector2i in GridRules.cells(item.footprint, rotation):
+		var rect := Rect2(origin + Vector2(cell) * cell_size * scale_factor + Vector2(4, 6), Vector2.ONE * cell_size * scale_factor)
+		draw_rect(rect.grow(-5), Color(0.07, 0.07, 0.08, 0.28))
+	ItemIcons.draw_icon(self, item, origin, cell_size / 24.0 * scale_factor, rotation)

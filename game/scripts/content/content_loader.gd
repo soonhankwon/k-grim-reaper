@@ -29,17 +29,17 @@ func load_csv_directory(path: String) -> Dictionary:
 func _read_schema() -> Dictionary:
 	var value: Variant = _read_json(SCHEMA_PATH)
 	if not value is Dictionary or not value.get("tables") is Dictionary or not value.has("schema_version"):
-		if error.is_empty(): error = "schema.json: 스키마 형식 오류"
+		if error.is_empty(): error = "schema.json: Invalid schema format"
 		return {}
 	return value
 
 func _read_json(path: String) -> Variant:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null:
-		error = "%s: 파일을 열 수 없습니다." % path
+		error = "%s: Cannot open file." % path
 		return null
 	if file.get_length() > MAX_BYTES:
-		error = "%s: 파일 크기 제한을 초과했습니다." % path
+		error = "%s: File exceeds the size limit." % path
 		return null
 	var parser := JSON.new()
 	var code := parser.parse(file.get_as_text().trim_prefix("\ufeff"))
@@ -51,7 +51,7 @@ func _read_json(path: String) -> Variant:
 func _read_csv(path: String, fields: Dictionary) -> Array:
 	var file := FileAccess.open(path, FileAccess.READ)
 	if file == null or file.get_length() > MAX_BYTES:
-		error = "%s: 파일이 없거나 크기 제한을 초과했습니다." % path
+		error = "%s: File missing or exceeds the size limit." % path
 		return []
 	# Skip a UTF-8 BOM before the CSV parser sees a quoted first field.
 	if file.get_buffer(3) != PackedByteArray([239, 187, 191]): file.seek(0)
@@ -59,19 +59,19 @@ func _read_csv(path: String, fields: Dictionary) -> Array:
 	var seen: Dictionary = {}
 	for column in headers:
 		if seen.has(column) or (not fields.has(column) and not column.begins_with("_")):
-			error = "%s: 중복 또는 알 수 없는 열 '%s'" % [path, column]
+			error = "%s: Duplicate or unknown column '%s'" % [path, column]
 			return []
 		seen[column] = true
 	for field: String in fields:
 		if not seen.has(field):
-			error = "%s: 필수 열 '%s' 없음" % [path, field]
+			error = "%s: Required column '%s' missing" % [path, field]
 			return []
 	var rows: Array = []
 	while not file.eof_reached():
 		var values := file.get_csv_line()
 		if values.size() == 1 and values[0].strip_edges().is_empty(): continue
 		if values.size() != headers.size():
-			error = "%s: 레코드 %d 열 수 불일치" % [path, rows.size() + 2]
+			error = "%s: Record %d has the wrong number of columns" % [path, rows.size() + 2]
 			return []
 		var row: Dictionary = {}
 		var populated := false
@@ -82,7 +82,7 @@ func _read_csv(path: String, fields: Dictionary) -> Array:
 		if not populated: continue
 		rows.append(row)
 		if rows.size() > MAX_ROWS:
-			error = "%s: 행 수 제한 초과" % path
+			error = "%s: Too many rows" % path
 			return []
 	return rows
 
@@ -91,29 +91,30 @@ func validate(input: Variant) -> Dictionary:
 	_schema = _read_schema()
 	if not error.is_empty(): return {"error": error}
 	if not input is Dictionary or input.get("schema_version") != _schema.schema_version:
-		return {"error": "schema_version: 지원하지 않는 콘텐츠 형식입니다."}
+		return {"error": "schema_version: Unsupported content format."}
 	var raw: Dictionary = input.duplicate(true)
 	for key: String in raw:
 		if key not in ["schema_version", "art"] and not _schema.tables.has(key):
-			return {"error": "알 수 없는 콘텐츠 테이블: " + key}
+			return {"error": "Unknown content table: " + key}
 	for table: String in _schema.tables:
-		if table == "resolutions" and not raw.has(table): continue
+		if table in ["resolutions", "hazards"] and not raw.has(table): continue
 		if not raw.get(table) is Array or raw[table].size() > MAX_ROWS:
-			return {"error": table + ": 배열이 없거나 행 수 제한을 초과했습니다."}
+			return {"error": table + ": Array missing or too many rows."}
 		var ids: Dictionary = {}
 		for i in raw[table].size():
 			var row: Variant = raw[table][i]
 			var location := "%s[%d]" % [table, i + 2]
-			if not row is Dictionary: return {"error": location + ": 행 형식 오류"}
+			if not row is Dictionary: return {"error": location + ": Invalid row format"}
 			for key: String in row:
-				if not _schema.tables[table].has(key): return {"error": location + ": 알 수 없는 열 " + key}
+				if not _schema.tables[table].has(key): return {"error": location + ": Unknown column " + key}
 			for field: String in _schema.tables[table]:
-				if not row.has(field): return {"error": location + ": 필수 열 없음 " + field}
+				if not row.has(field): return {"error": location + ": Missing required column " + field}
 				row[field] = _value(row[field], _schema.tables[table][field], location + "." + field)
 				if not error.is_empty(): return {"error": error}
-			if ids.has(row.id): return {"error": location + ": 중복 ID " + row.id}
+			if ids.has(row.id): return {"error": location + ": Duplicate ID " + row.id}
 			ids[row.id] = true
 	if raw.get("resolutions", []).is_empty(): raw.erase("resolutions")
+	if raw.get("hazards", []).is_empty(): raw.erase("hazards")
 	var problem := _references(raw)
 	if not problem.is_empty(): return {"error": problem}
 	return {"error": "", "raw": raw}
@@ -146,7 +147,7 @@ func _value(value: Variant, spec: Dictionary, location: String) -> Variant:
 							valid = valid and _id(id) and not seen.has(id)
 							seen[id] = true
 					"cells": valid = not parse_cells(value).is_empty()
-	if not valid: error = "%s: 유효한 %s 값이 아닙니다: %s" % [location, spec.type, str(value)]
+	if not valid: error = "%s: Invalid %s value: %s" % [location, spec.type, str(value)]
 	return value
 
 static func _id(value: String) -> bool:
@@ -168,13 +169,23 @@ static func parse_cells(value: String) -> Array[Vector2i]:
 	if minimum != Vector2i.ZERO or result.size() > 64: return []
 	return result
 
+static func parse_grid_cells(value: String) -> Array[Vector2i]:
+	var result: Array[Vector2i] = []
+	for pair in value.split("|", true):
+		var numbers := pair.split(":", true)
+		if numbers.size() != 2 or not numbers[0].is_valid_int() or not numbers[1].is_valid_int(): return []
+		var cell := Vector2i(int(numbers[0]), int(numbers[1]))
+		if cell.x < 0 or cell.y < 0 or cell.x >= 64 or cell.y >= 64 or result.has(cell): return []
+		result.append(cell)
+	return result if result.size() <= 64 else []
+
 static func index(rows: Array) -> Dictionary:
 	var result: Dictionary = {}
 	for row: Dictionary in rows: result[row.id] = row
 	return result
 
 func _references(raw: Dictionary) -> String:
-	if raw.rules.size() != 1 or raw.items.is_empty() or raw.encounters.is_empty(): return "rules는 한 행, items와 encounters는 최소 한 행이 필요합니다."
+	if raw.rules.size() != 1 or raw.items.is_empty() or raw.encounters.is_empty(): return "Rules require one row; items and encounters require at least one row."
 	var art_error := _validate_art(raw.get("art"))
 	if not art_error.is_empty(): return art_error
 	var units := index(raw.effects)
@@ -182,55 +193,55 @@ func _references(raw: Dictionary) -> String:
 	var tags := index(raw.tags)
 	for unit: Dictionary in raw.effects:
 		for tag in split_ids(unit.required_tags) + split_ids(unit.condition_tags):
-			if not tags.has(tag): return "effects.%s: 알 수 없는 태그 %s" % [unit.id, tag]
-		if (unit.trigger == "modify") != (unit.operation in ["modify_power", "multiply_power"]): return "effects.%s: modify / 수정 연산 조합이 필요합니다." % unit.id
+			if not tags.has(tag): return "effects.%s: Unknown tag %s" % [unit.id, tag]
+		if (unit.trigger == "modify") != (unit.operation in ["modify_power", "multiply_power"]): return "effects.%s: A modify trigger and modifier operation are required." % unit.id
 		if unit.trigger == "modify":
-			if unit.target not in ["self", "adjacent_items", "diagonal_items", "neighbor_items"] or unit.affects.is_empty(): return "effects.%s: 수정 대상/affects 오류" % unit.id
-			if unit.operation == "multiply_power" and (unit.scale != "flat" or unit.amount < 1): return "effects.%s: 배율은 1 이상의 정수와 flat만 지원합니다." % unit.id
+			if unit.target not in ["self", "adjacent_items", "diagonal_items", "neighbor_items"] or unit.affects.is_empty(): return "effects.%s: Invalid modifier target or affects field" % unit.id
+			if unit.operation == "multiply_power" and (unit.scale != "flat" or unit.amount < 1): return "effects.%s: Multipliers require an integer of at least 1 and flat scaling." % unit.id
 		else:
-			if unit.target not in ["self", "opponent"] or not unit.affects.is_empty() or not unit.required_tags.is_empty() or not unit.stack_group.is_empty(): return "effects.%s: 수정 전용 필드가 실행 효과에 있습니다." % unit.id
-		if unit.scale == "flat" and not unit.condition_tags.is_empty(): return "effects.%s: condition_tags에는 범위별 수량이 필요합니다." % unit.id
+			if unit.target not in ["self", "opponent"] or not unit.affects.is_empty() or not unit.required_tags.is_empty() or not unit.stack_group.is_empty(): return "effects.%s: Modifier-only fields are present on an active effect." % unit.id
+		if unit.scale == "flat" and not unit.condition_tags.is_empty(): return "effects.%s: condition_tags requires adjacency-based scaling." % unit.id
 	for item: Dictionary in raw.items:
-		if item.display_name.strip_edges().is_empty(): return "items.%s: 이름이 비어 있습니다." % item.id
-		if split_ids(item.effect_ids).size() > 32: return "items.%s: 아이템당 효과 단위는 최대 32개입니다." % item.id
-		if not raw.art.icons.has(item.icon_id): return "items.%s: 알 수 없는 icon_id" % item.id
+		if item.display_name.strip_edges().is_empty(): return "items.%s: Name is empty." % item.id
+		if split_ids(item.effect_ids).size() > 32: return "items.%s: An item may have at most 32 effects." % item.id
+		if not raw.art.icons.has(item.icon_id): return "items.%s: Unknown icon_id" % item.id
 		for tag in split_ids(item.tags):
-			if not tags.has(tag): return "items.%s: 알 수 없는 태그 %s" % [item.id, tag]
+			if not tags.has(tag): return "items.%s: Unknown tag %s" % [item.id, tag]
 		for id in split_ids(item.effect_ids):
-			if not units.has(id): return "items.%s: 알 수 없는 효과 %s" % [item.id, id]
+			if not units.has(id): return "items.%s: Unknown effect %s" % [item.id, id]
 	var orders: Dictionary = {}
 	for encounter: Dictionary in raw.encounters:
-		if orders.has(encounter.order): return "encounters: order 중복"
+		if orders.has(encounter.order): return "encounters: Duplicate order"
 		orders[encounter.order] = true
-		if not raw.art.actors.has(encounter.visual_id): return "encounters.%s: 알 수 없는 visual_id" % encounter.id
-		if encounter.name.strip_edges().is_empty() or encounter.intent_ids.is_empty(): return "encounters.%s: 이름 또는 의도 없음" % encounter.id
+		if not raw.art.actors.has(encounter.visual_id): return "encounters.%s: Unknown visual_id" % encounter.id
+		if encounter.name.strip_edges().is_empty() or encounter.intent_ids.is_empty(): return "encounters.%s: Name or intent missing" % encounter.id
 		for column in ["intent_ids", "reaction_ids"]:
 			for id in split_ids(encounter[column]):
-				if not units.has(id): return "encounters.%s: 알 수 없는 효과 %s" % [encounter.id, id]
+				if not units.has(id): return "encounters.%s: Unknown effect %s" % [encounter.id, id]
 				var unit: Dictionary = units[id]
 				var trigger := "use" if column == "intent_ids" else "damage_taken"
-				if unit.trigger != trigger or unit.scale != "flat": return "encounters.%s: 의도/반응은 해당 trigger의 flat 효과만 지원합니다." % encounter.id
+				if unit.trigger != trigger or unit.scale != "flat": return "encounters.%s: Intents and reactions require flat effects with the matching trigger." % encounter.id
 	var rule: Dictionary = raw.rules[0]
 	var encounter_ids := index(raw.encounters)
 	var rewarded: Dictionary = {}
 	var last_order := -1
 	for row: Dictionary in raw.encounters: last_order = maxi(last_order, row.order)
 	for reward: Dictionary in raw.rewards:
-		if not encounter_ids.has(reward.encounter_id) or rewarded.has(reward.encounter_id): return "rewards.%s: 없는 길목 또는 중복 보상" % reward.id
-		if encounter_ids[reward.encounter_id].order == last_order: return "rewards.%s: 마지막 길목에는 보상을 지정하지 않습니다." % reward.id
+		if not encounter_ids.has(reward.encounter_id) or rewarded.has(reward.encounter_id): return "rewards.%s: Unknown encounter or duplicate reward" % reward.id
+		if encounter_ids[reward.encounter_id].order == last_order: return "rewards.%s: The final encounter cannot have a reward." % reward.id
 		var candidates := split_ids(reward.item_ids)
-		if candidates.is_empty() or candidates.size() > 3: return "rewards.%s: 후보는 1~3개입니다." % reward.id
+		if candidates.is_empty() or candidates.size() > 3: return "rewards.%s: Rewards require 1–3 choices." % reward.id
 		for id in candidates:
-			if not items.has(id): return "rewards.%s: 알 수 없는 아이템 %s" % [reward.id, id]
+			if not items.has(id): return "rewards.%s: Unknown item %s" % [reward.id, id]
 			var fits := false
 			for rotation in 4:
 				var bounds := Vector2i.ZERO
 				for cell in GridRules.cells(parse_cells(items[id].footprint), rotation): bounds = bounds.max(cell + Vector2i.ONE)
 				fits = fits or (bounds.x <= rule.grid_width and bounds.y <= rule.grid_height)
-			if not fits: return "rewards.%s: 빈 보따리에도 들어가지 않는 후보 %s" % [reward.id, id]
+			if not fits: return "rewards.%s: Choice %s cannot fit in an empty bag" % [reward.id, id]
 		rewarded[reward.encounter_id] = true
 	if not raw.routes.is_empty():
-		if raw.routes.size() < 2 or raw.routes.size() > 3 or raw.encounters.size() < 2 or raw.encounters.size() > 64: return "routes: 2~3개 경로와 2~64개 길목이 필요합니다."
+		if raw.routes.size() < 2 or raw.routes.size() > 3 or raw.encounters.size() < 2 or raw.encounters.size() > 64: return "routes: Requires 2–3 routes and 2–64 encounters."
 		var sorted_encounters: Array = raw.encounters.duplicate(true)
 		sorted_encounters.sort_custom(func(a, b): return a.order < b.order)
 		var first_id: String = sorted_encounters[0].id
@@ -240,71 +251,90 @@ func _references(raw: Dictionary) -> String:
 		for route: Dictionary in raw.routes:
 			var encounters := split_ids(route.encounter_ids)
 			var rewards := split_ids(route.reward_ids)
-			if route.name.strip_edges().is_empty() or encounters.size() != raw.encounters.size() or encounters[0] != first_id: return "routes.%s: 이름 또는 공통 시작 길목 오류" % route.id
-			if rewards.size() != encounters.size() - 1: return "routes.%s: 보상은 마지막을 제외한 각 길목마다 하나가 필요합니다." % route.id
+			if route.name.strip_edges().is_empty() or encounters.size() != raw.encounters.size() or encounters[0] != first_id: return "routes.%s: Invalid name or shared starting encounter" % route.id
+			if rewards.size() != encounters.size() - 1: return "routes.%s: Each encounter except the last requires one reward." % route.id
 			for id in encounters:
-				if not encounter_ids.has(id): return "routes.%s: 알 수 없는 길목 %s" % [route.id, id]
+				if not encounter_ids.has(id): return "routes.%s: Unknown encounter %s" % [route.id, id]
 			for id in rewards:
-				if not reward_ids.has(id): return "routes.%s: 알 수 없는 보상 %s" % [route.id, id]
+				if not reward_ids.has(id): return "routes.%s: Unknown reward %s" % [route.id, id]
 			if first_reward.is_empty(): first_reward = rewards[0]
-			elif first_reward != rewards[0]: return "routes: 첫 보상은 경로 선택 전에 공통이어야 합니다."
-			if sequences.has(route.encounter_ids): return "routes: 같은 길목 순서가 중복됩니다."
+			elif first_reward != rewards[0]: return "routes: The first reward must be shared before route selection."
+			if sequences.has(route.encounter_ids): return "routes: Duplicate encounter order."
 			sequences[route.encounter_ids] = true
-	if raw.events.size() > 1: return "events: 현재 출장당 사건은 최대 하나입니다."
+	if raw.events.size() > 1: return "events: At most one event is supported per run."
 	var resolutions: Array = raw.get("resolutions", [])
-	if resolutions.size() > 1: return "resolutions: 현재 런당 결말 분기는 최대 하나입니다."
+	if resolutions.size() > 1: return "resolutions: At most one ending branch is supported per run."
 	for resolution: Dictionary in resolutions:
-		if raw.events.size() != 1 or resolution.event_id != raw.events[0].id: return "resolutions.%s: 사건 참조가 올바르지 않습니다." % resolution.id
+		if raw.events.size() != 1 or resolution.event_id != raw.events[0].id: return "resolutions.%s: Invalid event reference." % resolution.id
 		for field in ["message", "result", "button", "unavailable", "completion_title"]:
-			if resolution[field].strip_edges().is_empty() or resolution[field].length() > 240: return "resolutions.%s: %s가 비어 있거나 너무 깁니다." % [resolution.id, field]
+			if resolution[field].strip_edges().is_empty() or resolution[field].length() > 240: return "resolutions.%s: %s is empty or too long." % [resolution.id, field]
+	var hazard_steps: Dictionary = {}
+	for hazard: Dictionary in raw.get("hazards", []):
+		if hazard.step >= raw.encounters.size() or hazard_steps.has(hazard.step): return "hazards.%s: Duplicate encounter or encounter out of range." % hazard.id
+		hazard_steps[hazard.step] = true
+		if hazard.label.strip_edges().is_empty() or hazard.label.length() > 32 or hazard.description.strip_edges().is_empty() or hazard.description.length() > 160: return "hazards.%s: Invalid display text." % hazard.id
+		var cells := parse_grid_cells(hazard.cells)
+		if cells.is_empty(): return "hazards.%s: Invalid cell list." % hazard.id
+		for cell: Vector2i in cells:
+			if cell.x >= rule.grid_width or cell.y >= rule.grid_height: return "hazards.%s: Cell is outside the bag." % hazard.id
+		var required := split_ids(hazard.required_tags)
+		if required.is_empty(): return "hazards.%s: A target tag is required." % hazard.id
+		for tag in required:
+			if not tags.has(tag): return "hazards.%s: Unknown target tag." % hazard.id
 	for event: Dictionary in raw.events:
-		if raw.routes.is_empty() or event.step != 0 or raw.encounters.size() < 3: return "events.%s: 세 길목 이상의 경로에서 첫 길목 뒤 사건만 지원합니다." % event.id
-		if not items.has(event.item_id) or items[event.item_id].consumable: return "events.%s: 유효한 비소모 아이템이 필요합니다." % event.id
+		if raw.routes.is_empty() or event.step != 0 or raw.encounters.size() < 3: return "events.%s: Only events after the first encounter on routes with at least three encounters are supported." % event.id
+		if not items.has(event.item_id) or items[event.item_id].consumable: return "events.%s: A valid non-consumable item is required." % event.id
 		for field in ["title", "description", "take_label", "leave_label", "take_result", "leave_result"]:
-			if event[field].strip_edges().is_empty() or event[field].length() > 240: return "events.%s: %s가 비어 있거나 너무 깁니다." % [event.id, field]
+			if event[field].strip_edges().is_empty() or event[field].length() > 240: return "events.%s: %s is empty or too long." % [event.id, field]
 		var fits := false
 		for rotation in 4:
 			var bounds := Vector2i.ZERO
 			for cell in GridRules.cells(parse_cells(items[event.item_id].footprint), rotation): bounds = bounds.max(cell + Vector2i.ONE)
 			fits = fits or (bounds.x <= rule.grid_width and bounds.y <= rule.grid_height)
-		if not fits: return "events.%s: 유품이 빈 보따리에도 들어가지 않습니다." % event.id
-	if rule.grid_width * rule.grid_height > EffectApplier.MAX_ACTIVE_ITEMS: return "rules: 현재 엔진의 격자 상한은 64칸입니다."
-	if not raw.art.actors.has(rule.player_visual): return "rules: player_visual 없음"
+		if not fits: return "events.%s: The keepsake cannot fit in an empty bag." % event.id
+	if rule.grid_width * rule.grid_height > EffectApplier.MAX_ACTIVE_ITEMS: return "rules: The engine supports at most 64 grid cells."
+	if not raw.art.actors.has(rule.player_visual): return "rules: player_visual missing"
 	var occupied: Dictionary = {}
 	var active_units := 0
 	for row: Dictionary in raw.loadout:
-		if not items.has(row.item_id): return "loadout.%s: 알 수 없는 item_id" % row.id
+		if not items.has(row.item_id): return "loadout.%s: Unknown item_id" % row.id
 		if row.x == -1 and row.y == -1: continue
 		active_units += split_ids(items[row.item_id].effect_ids).size()
-		if active_units > EffectApplier.MAX_ACTIVE_UNITS: return "loadout: 동시에 장착한 효과는 최대 256개입니다."
+		if active_units > EffectApplier.MAX_ACTIVE_UNITS: return "loadout: At most 256 effects can be equipped at once."
 		for cell in GridRules.cells(parse_cells(items[row.item_id].footprint), row.rotation):
 			var point := cell + Vector2i(row.x, row.y)
-			if point.x < 0 or point.y < 0 or point.x >= rule.grid_width or point.y >= rule.grid_height or occupied.has(point): return "loadout.%s: 초기 배치 겹침 또는 범위 초과" % row.id
+			if point.x < 0 or point.y < 0 or point.x >= rule.grid_width or point.y >= rule.grid_height or occupied.has(point): return "loadout.%s: Starting layout overlaps or is out of bounds" % row.id
 			occupied[point] = true
 	return ""
 
 func _validate_art(art: Variant) -> String:
-	if not art is Dictionary or not art.get("palette") is Array or not art.get("icons") is Dictionary or not art.get("actors") is Dictionary: return "art: palette/icons/actors 형식 오류"
-	if art.palette.is_empty() or art.palette.size() > 64: return "art: palette 크기 오류"
+	if not art is Dictionary or not art.get("palette") is Array or not art.get("icons") is Dictionary or not art.get("actors") is Dictionary: return "art: Invalid palette/icons/actors format"
+	if art.palette.is_empty() or art.palette.size() > 64: return "art: Invalid palette size"
 	for color: Variant in art.palette:
-		if not color is String or not Color.html_is_valid(color): return "art: 색상 오류"
+		if not color is String or not Color.html_is_valid(color): return "art: Invalid color"
 	for group in ["icons", "actors"]:
 		for id: String in art[group]:
 			var shape: Variant = art[group][id]
-			if not _id(id) or not shape is Dictionary or not shape.get("parts") is Array or shape.parts.size() > 256: return "art.%s.%s: 도형 오류" % [group,id]
+			if not _id(id) or not shape is Dictionary or not shape.get("parts") is Array or shape.parts.size() > 256: return "art.%s.%s: Invalid shape" % [group,id]
+			if group == "icons" and shape.has("background_path"): return "art.%s: An icon cannot specify a background path." % id
+			for key in ["texture_path", "background_path"]:
+				if not shape.has(key): continue
+				var path: Variant = shape[key]
+				if not path is String or not path.begins_with("res://assets/visuals/") or ".." in path or not path.ends_with(".png") or not ResourceLoader.exists(path, "Texture2D"):
+					return "art.%s.%s: Invalid PNG resource path." % [id, key]
 			if group == "icons":
-				if not shape.get("size") is Array or shape["size"].size() != 2: return "art.%s: size 오류" % id
+				if not shape.get("size") is Array or shape["size"].size() != 2: return "art.%s: Invalid size" % id
 				for side: Variant in shape["size"]:
-					if not (side is float or side is int) or not is_finite(side) or side < 1 or side > 1536: return "art.%s: size 범위 오류" % id
+					if not (side is float or side is int) or not is_finite(side) or side < 1 or side > 1536: return "art.%s: Size out of bounds" % id
 			for part: Variant in shape.parts:
-				if not part is Array or part.size() != 5: return "art.%s: 사각형 형식 오류" % id
+				if not part is Array or part.size() != 5: return "art.%s: Invalid rectangle format" % id
 				for i in 4:
-					if not (part[i] is float or part[i] is int) or not is_finite(part[i]) or part[i] < 0 or part[i] > 1536: return "art.%s: 사각형 범위 오류" % id
-				if part[2] == 0 or part[3] == 0: return "art.%s: 빈 사각형" % id
+					if not (part[i] is float or part[i] is int) or not is_finite(part[i]) or part[i] < 0 or part[i] > 1536: return "art.%s: Rectangle out of bounds" % id
+				if part[2] == 0 or part[3] == 0: return "art.%s: Empty rectangle" % id
 				if group == "icons":
-					if not (part[4] is float or part[4] is int) or part[4] != floor(part[4]) or part[4] < 0 or part[4] >= art.palette.size(): return "art.%s: palette 인덱스 오류" % id
-					if part[0]+part[2] > shape["size"][0] or part[1]+part[3] > shape["size"][1]: return "art.%s: 아이콘 크기 초과" % id
-				elif not part[4] is String or not Color.html_is_valid(part[4]): return "art.%s: 색상 오류" % id
+					if not (part[4] is float or part[4] is int) or part[4] != floor(part[4]) or part[4] < 0 or part[4] >= art.palette.size(): return "art.%s: Invalid palette index" % id
+					if part[0]+part[2] > shape["size"][0] or part[1]+part[3] > shape["size"][1]: return "art.%s: Icon exceeds size limit" % id
+				elif not part[4] is String or not Color.html_is_valid(part[4]): return "art.%s: Invalid color" % id
 	return ""
 
 static func materialize(raw: Dictionary) -> Dictionary:
@@ -348,6 +378,12 @@ static func materialize(raw: Dictionary) -> Dictionary:
 		config.encounters.append(enemy)
 	config.events = raw.events.duplicate(true)
 	config.resolutions = raw.get("resolutions", []).duplicate(true)
+	config.hazards = []
+	for row: Dictionary in raw.get("hazards", []):
+		var hazard := row.duplicate(true)
+		hazard.cells = parse_grid_cells(row.cells)
+		hazard.required_tags = Array(split_ids(row.required_tags))
+		config.hazards.append(hazard)
 	config.routes = []
 	var positions: Dictionary = {}
 	for index in config.encounters.size(): positions[config.encounters[index].id] = index

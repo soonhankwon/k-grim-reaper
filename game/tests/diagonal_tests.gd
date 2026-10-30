@@ -62,7 +62,7 @@ func _test_battle(raw: Dictionary) -> void:
 		if model.is_packed(uid): model.move_to_stash(uid)
 	check(model.place("sword", Vector2i(1,0), 0) and model.place("seal", Vector2i(0,3), 0), "test items fit with diagonal-only contact")
 	check(model.action_result("sword").power == 8, "diagonal modifier applies to weapon")
-	check("대각선 물건" in " ".join(EffectText.lines(model.combat_snapshot().seal, model.combat_snapshot(), "seal")), "effect text describes diagonal target")
+	check("Diagonal items" in " ".join(EffectText.lines(model.combat_snapshot().seal, model.combat_snapshot(), "seal")), "effect text describes diagonal target")
 	var session := BattleSession.new()
 	root.add_child(session)
 	session.reset(model)
@@ -85,7 +85,7 @@ func _test_battle(raw: Dictionary) -> void:
 	battle.start_battle()
 	var result := CombatSimulator.resolve(battle.snapshot(), {"type":"end_turn"})
 	check(result.error.is_empty() and result.after().health == model.config.max_health - 1, "turn-end simulation uses diagonal guard")
-	check("대각선" in " ".join(EffectText.lines(model.combat_snapshot().lantern, model.combat_snapshot(), "lantern")), "effect text describes diagonal scaling")
+	check("Diagonal" in " ".join(EffectText.lines(model.combat_snapshot().lantern, model.combat_snapshot(), "lantern")), "effect text describes diagonal scaling")
 
 func _test_range_dedup(raw: Dictionary) -> void:
 	var model := ItemCatalog.from_validated(raw)
@@ -118,7 +118,7 @@ func _test_csv() -> void:
 	var dir := ProjectSettings.globalize_path("res://../build/diagonal-csv-%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(dir)
 	var source := ProjectSettings.globalize_path("res://../content/source")
-	for name in ["items.csv", "tags.csv", "loadout.csv", "encounters.csv", "rules.csv", "rewards.csv", "routes.csv", "events.csv", "resolutions.csv", "art.json"]:
+	for name in ["items.csv", "tags.csv", "loadout.csv", "encounters.csv", "rules.csv", "rewards.csv", "routes.csv", "events.csv", "resolutions.csv", "hazards.csv", "art.json"]:
 		check(DirAccess.copy_absolute(source.path_join(name), dir.path_join(name)) == OK, "copy test data " + name)
 	var input := FileAccess.open(source.path_join("effects.csv"), FileAccess.READ)
 	var output := FileAccess.open(dir.path_join("effects.csv"), FileAccess.WRITE)

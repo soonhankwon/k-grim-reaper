@@ -1,0 +1,15 @@
+{
+  "profiles": {
+    "ink": {"tile": 0, "count": 18, "lifetime": 0.55, "velocity_min": 30, "velocity_max": 85, "gravity_y": 65, "spread": 150, "scale_min": 0.45, "scale_max": 0.75, "advance_seconds": 0.7},
+    "frost": {"tile": 1, "count": 18, "lifetime": 0.65, "velocity_min": 12, "velocity_max": 32, "gravity_y": 20, "spread": 150, "scale_min": 0.40, "scale_max": 0.75, "advance_seconds": 0.8},
+    "embers": {"tile": 2, "count": 14, "lifetime": 0.55, "velocity_min": 22, "velocity_max": 55, "gravity_y": -20, "spread": 50, "scale_min": 0.40, "scale_max": 0.70, "advance_seconds": 0.7},
+    "gilded": {"tile": 3, "count": 14, "lifetime": 0.55, "velocity_min": 25, "velocity_max": 65, "gravity_y": 70, "spread": 130, "scale_min": 0.40, "scale_max": 0.75, "advance_seconds": 0.7}
+  },
+  "rules": [
+    {"event": "damage", "effect_id": "", "condition": "enemy_defeated", "anchor": "enemy", "profile": "ink"},
+    {"event": "encounter_prepared", "effect_id": "", "condition": "hazard_added", "anchor": "hazards", "profile": "frost"},
+    {"event": "guard", "effect_id": "lantern_guard", "condition": "always", "anchor": "source", "profile": "embers"},
+    {"event": "guard", "effect_id": "coin_use", "condition": "always", "anchor": "source", "profile": "gilded"},
+    {"event": "reward_confirm", "effect_id": "", "condition": "always", "anchor": "source", "profile": "gilded"}
+  ]
+}

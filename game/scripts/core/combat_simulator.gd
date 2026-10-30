@@ -11,11 +11,12 @@ var _events: Array[Dictionary] = []
 var _pending: Array[Dictionary] = []
 var _trigger_counts: Dictionary = {}
 var _failure := ""
+var _suppress_enemy_intent := false
 
 static func initial_state(config: Dictionary) -> Dictionary:
 	return {"phase": "packing", "encounter": 0, "config": config.duplicate(true), "health": config.max_health, "energy": config.energy_per_turn,
 		"guard": 0, "enemy_health": config.encounters[0].hp, "enemy_guard": 0, "turn": 1, "used": {},
-		"messages": ["첫 인도에 앞서 보따리를 꾸려 보세요."], "reactions": [], "reward": {}, "route": {"choice":"", "step":0},
+		"messages": ["Prepare your bag for your first delivery."], "reactions": [], "reward": {}, "route": {"choice":"", "step":0},
 		"packed_items": {}, "inventory_items": {}, "event": {}}
 
 static func enemy(state: Dictionary) -> Dictionary:
@@ -26,16 +27,17 @@ static func intent(state: Dictionary) -> Dictionary:
 	return sequence[(int(state.turn) - 1) % sequence.size()].duplicate(true)
 
 static func use_error(state: Dictionary, uid: String) -> String:
-	if state.phase != "battle": return "보따리를 정리한 뒤 전투를 시작하세요."
-	if not state.packed_items.has(uid): return "보따리에 넣은 물건만 사용할 수 있습니다."
+	if state.phase != "battle": return "Arrange your bag before starting battle."
+	if not state.packed_items.has(uid): return "Only items in your bag can be used."
 	var item: Dictionary = state.packed_items[uid]
-	if not EffectApplier.has_trigger(item, "use"): return "자동으로 효과가 적용되는 물건입니다."
-	if int(state.used.get(uid, 0)) >= int(item.uses_per_turn): return "이번 턴에 이미 사용했습니다."
-	if state.energy < item.cost: return "기력이 부족합니다."
+	if not EffectApplier.has_trigger(item, "use"): return "This item has a passive effect."
+	if int(state.used.get(uid, 0)) >= int(item.uses_per_turn): return "Already used this turn."
+	if state.energy < InventoryRules.action_cost(state, item).total: return "Not enough energy."
 	return ""
 
-static func resolve(before: Dictionary, request: Dictionary) -> CombatResolution:
+static func resolve(before: Dictionary, request: Dictionary, options: Dictionary = {}) -> CombatResolution:
 	var simulation := CombatSimulator.new()
+	simulation._suppress_enemy_intent = bool(options.get("suppress_enemy_intent", false))
 	simulation._state = before.duplicate(true)
 	simulation._resolve_request(request.duplicate(true))
 	if not simulation._failure.is_empty():
@@ -45,7 +47,7 @@ static func resolve(before: Dictionary, request: Dictionary) -> CombatResolution
 
 func _resolve_request(request: Dictionary) -> void:
 	if not EffectApplier.within_budget(_state.packed_items):
-		_failure = "보따리 효과 계획의 처리 한도를 초과했습니다."
+		_failure = "Bag effect plan exceeds the processing limit."
 		return
 	_failure = _validate_reactions()
 	if not _failure.is_empty(): return
@@ -57,14 +59,14 @@ func _resolve_request(request: Dictionary) -> void:
 		"advance": _advance()
 		"choose_route": _choose_route(str(request.get("route_id", "")))
 		"resolve_encounter": _resolve_encounter()
-		_: _failure = "알 수 없는 전투 명령입니다."
+		_: _failure = "Unknown battle command."
 
 func _resolve_encounter() -> void:
 	var rules := EventRules.resolution(_state)
 	var event: Dictionary = _state.get("event", {})
 	var entry := EventRules.definition(_state)
 	if rules.is_empty() or _state.phase != "battle" or entry.is_empty() or event.get("status", "") != "carried" or RouteRules.step(_state) != int(entry.step) + 1 or not _state.packed_items.has(event.get("uid", "")):
-		_failure = "지금은 증거를 보여 줄 수 없습니다."
+		_failure = "You cannot show the evidence now."
 		return
 	_state.enemy_health = 0
 	_state.enemy_guard = 0
@@ -76,14 +78,20 @@ func _resolve_encounter() -> void:
 
 func _start() -> void:
 	if _state.phase != "packing":
-		_failure = "지금은 전투를 시작할 수 없습니다."
+		_failure = "You cannot start a battle now."
 		return
 	var has_attack := false
+	var affordable_attack := false
 	for item: Dictionary in _state.packed_items.values():
 		for unit: Dictionary in item.effects:
-			has_attack = has_attack or (unit.trigger == "use" and unit.operation == "damage" and unit.target == "opponent")
+			if unit.trigger == "use" and unit.operation == "damage" and unit.target == "opponent":
+				has_attack = true
+				affordable_attack = affordable_attack or InventoryRules.action_cost(_state, item).total <= int(_state.config.energy_per_turn)
 	if not has_attack:
-		_failure = "공격 도구를 하나 이상 보따리에 넣어 주세요."
+		_failure = "Place at least one attack item in your bag."
+		return
+	if not affordable_attack:
+		_failure = "No attack item is affordable. Change your layout before starting."
 		return
 	_state.phase = "battle"
 	_state.enemy_health = enemy(_state).hp
@@ -92,15 +100,17 @@ func _start() -> void:
 	_state.guard = 0
 	_state.turn = 1
 	_state.used.clear()
-	_record("battle_started", "%s — 인도를 방해하는 응어리를 걷어내세요." % enemy(_state).name)
+	_record("battle_started", "%s — Clear the spirit blocking your path." % enemy(_state).name)
 
 func _use(uid: String) -> void:
 	_failure = use_error(_state, uid)
 	if not _failure.is_empty(): return
 	var item: Dictionary = _state.packed_items[uid]
-	_state.energy -= item.cost
+	var cost := InventoryRules.action_cost(_state, item)
+	_state.energy -= cost.total
 	_state.used[uid] = int(_state.used.get(uid, 0)) + 1
-	var root_id := _record("action_started", "%s 사용 · 기력 %d" % [item.name, item.cost], {"source": uid})
+	var suffix := " · %s +%d" % [", ".join(cost.sources), cost.extra] if cost.extra > 0 else ""
+	var root_id := _record("action_started", "Use %s · Energy %d%s" % [item.name, cost.total, suffix], {"source": uid, "cost": cost.total, "base_cost": cost.base, "hazard_cost": cost.extra})
 	for plan in EffectApplier.plan(_state.packed_items, uid, "use"):
 		plan.cause_id = root_id
 		plan.depth = 0
@@ -110,12 +120,12 @@ func _use(uid: String) -> void:
 	if item.consumable:
 		_state.packed_items.erase(uid)
 		_state.inventory_items.erase(uid)
-		_record("consumed", "%s 소모" % item.name, {"source": uid, "cause_id": root_id})
+		_record("consumed", "%s consumed" % item.name, {"source": uid, "cause_id": root_id})
 	_settle_outcome()
 
 func _end_turn() -> void:
 	if _state.phase != "battle":
-		_failure = "지금은 턴을 종료할 수 없습니다."
+		_failure = "You cannot end the turn now."
 		return
 	var plans: Array[Dictionary] = []
 	for uid: String in _state.packed_items:
@@ -123,8 +133,12 @@ func _end_turn() -> void:
 			if not plan.error.is_empty() or plan.amount > 0 or plan.kind == "set_guard": plans.append(plan)
 	plans.sort_custom(_plan_precedes)
 	_pending.append_array(plans)
-	_pending.append(EffectApplier.actor_plan(intent(_state), "enemy", enemy(_state).name))
+	if not _suppress_enemy_intent:
+		_pending.append(EffectApplier.actor_plan(intent(_state), "enemy", enemy(_state).name))
 	_drain_effects()
+	if not _failure.is_empty(): return
+	if _suppress_enemy_intent:
+		_record("intent_cancelled", "The enemy's announced action was canceled.")
 	if not _failure.is_empty(): return
 	_settle_outcome()
 	if _state.phase == "battle":
@@ -132,41 +146,41 @@ func _end_turn() -> void:
 		_state.turn += 1
 		_state.energy = _state.config.energy_per_turn
 		_state.used.clear()
-		_record("turn_started", "%d턴 · 기력 회복" % _state.turn)
+		_record("turn_started", "Turn %d · Energy restored" % _state.turn)
 
 func _advance() -> void:
 	if _state.phase != "victory":
-		_failure = "전투를 마친 뒤 다음 길목으로 이동하세요."
+		_failure = "Finish the battle before continuing."
 		return
 	_state.reward = {}
 	if RouteRules.last(_state):
 		_state.phase = "complete"
-		_record("practice_completed", "모든 길목을 통과했습니다. 인도 연습 완료!")
+		_record("practice_completed", "All encounters complete. Delivery finished!")
 	elif not EventRules.due(_state).is_empty():
 		EventRules.open(_state, EventRules.due(_state))
-		_record("event_opened", "길가에서 유품을 발견했습니다.")
+		_record("event_opened", "You found a keepsake by the road.")
 	elif RouteRules.enabled(_state) and _state.route.choice.is_empty():
 		_state.phase = "route"
-		_record("route_requested", "다음 길을 고르세요. 먼저 만날 적이 달라집니다.")
+		_record("route_requested", "Choose a path. Each leads to a different first enemy.")
 	else:
 		if RouteRules.enabled(_state):
 			_state.route.step += 1
 			_state.encounter = RouteRules.current(_state).encounters[_state.route.step]
 		else: _state.encounter += 1
-		_prepare_encounter("다음 길목에 맞게 보따리를 정리하세요.")
+		_prepare_encounter("Arrange your bag for the next encounter.")
 
 func _choose_route(route_id: String) -> void:
 	if _state.phase != "route" or not RouteRules.enabled(_state) or not _state.route.choice.is_empty():
-		_failure = "지금은 길을 선택할 수 없습니다."
+		_failure = "You cannot choose a path now."
 		return
 	var route := RouteRules.find(_state.config, route_id)
 	if route.is_empty():
-		_failure = "제시된 경로 중에서 선택하세요."
+		_failure = "Choose one of the available paths."
 		return
 	_state.route.choice = route_id
 	_state.route.step = 1
 	_state.encounter = route.encounters[1]
-	_prepare_encounter("%s 선택 · 다음 길목을 준비하세요." % route.name)
+	_prepare_encounter("%s selected · Prepare for the next encounter." % route.name)
 
 func _prepare_encounter(message: String) -> void:
 	_state.phase = "packing"
@@ -189,7 +203,7 @@ func _drain_effects() -> void:
 			return
 		_processed += 1
 		if _processed > MAX_EFFECTS or int(effect.get("depth", 0)) > MAX_DEPTH:
-			_failure = "연쇄 효과 한도를 초과했습니다. 이번 행동을 적용하지 않았습니다."
+			_failure = "Chain limit exceeded. The action was not applied."
 			return
 		var cause := int(effect.get("cause_id", 0))
 		for bonus: Dictionary in effect.get("bonuses", []):
@@ -256,25 +270,25 @@ static func _reaction_precedes(a: Dictionary, b: Dictionary) -> bool:
 
 func _validate_reactions() -> String:
 	var ids: Dictionary = {}
-	if _state.reactions.size() > MAX_EFFECTS: return "연쇄 효과 정의가 너무 많습니다."
+	if _state.reactions.size() > MAX_EFFECTS: return "Too many chain effects."
 	for reaction: Dictionary in _state.reactions:
 		for field in ["id", "name", "owner", "effect", "target", "amount"]:
-			if not reaction.has(field): return "연쇄 효과 정의에 %s가 없습니다." % field
-		if str(reaction.id).is_empty() or ids.has(reaction.id): return "연쇄 효과 ID가 중복되거나 비어 있습니다."
+			if not reaction.has(field): return "Chain effect is missing %s." % field
+		if str(reaction.id).is_empty() or ids.has(reaction.id): return "Chain effect ID is empty or duplicated."
 		ids[reaction.id] = true
 		if reaction.owner not in ["player", "enemy"] or reaction.target not in ["player", "enemy"]:
-			return "연쇄 효과 대상이 올바르지 않습니다."
+			return "Invalid chain effect target."
 		if reaction.effect not in ["damage", "guard"] or int(reaction.amount) < 0:
-			return "연쇄 효과 종류나 수치가 올바르지 않습니다."
+			return "Invalid chain effect type or value."
 		if int(reaction.get("max_per_action", 1)) < 1 or int(reaction.get("max_per_action", 1)) > MAX_EFFECTS:
-			return "연쇄 효과의 행동당 횟수가 올바르지 않습니다."
+			return "Invalid per-action chain limit."
 	return ""
 
 func _settle_outcome() -> void:
 	# Resolve death only after reactions. Simultaneous death is defeat, never victory + heal.
 	if _state.health <= 0:
 		_state.phase = "defeat"
-		_record("defeat", "선배 사자가 당신을 데리고 돌아갑니다. 다시 준비해 보세요.")
+		_record("defeat", "Your mentor brings you home. Prepare and try again.")
 	elif _state.enemy_health <= 0:
 		_state.phase = "victory"
 		var recovered := mini(int(_state.config.victory_heal), maxi(0, int(_state.config.max_health) - int(_state.health)))
@@ -287,15 +301,15 @@ func _settle_outcome() -> void:
 			event.outcome = "take" if event.selected == "take" and _state.packed_items.has(event.uid) else "leave"
 			event.status = "resolved"
 			_state.phase = "event_result"
-		var victory_id := _record("victory", "길이 열렸습니다. 체력 %d 회복." % recovered)
+		var victory_id := _record("victory", "The way is clear. Healed %d HP." % recovered)
 		if followup:
 			var amount := mini(int(entry.heal_amount), maxi(0, int(_state.config.max_health) - int(_state.health))) if event.outcome == "take" else 0
 			_state.health += amount
-			_record("event_followup", "%s%s" % [entry.take_result if event.outcome == "take" else entry.leave_result, " · 체력 %d 회복" % amount if event.outcome == "take" else ""], {"source": event.uid, "cause_id": victory_id})
+			_record("event_followup", "%s%s" % [entry.take_result if event.outcome == "take" else entry.leave_result, " · Healed %d HP" % amount if event.outcome == "take" else ""], {"source": event.uid, "cause_id": victory_id})
 
 func _record(kind: String, message: String, details: Dictionary = {}) -> int:
 	if _events.size() >= MAX_EFFECTS:
-		_failure = "연쇄 이벤트 한도를 초과했습니다. 이번 행동을 적용하지 않았습니다."
+		_failure = "Chain event limit exceeded. The action was not applied."
 		return 0
 	_state.messages.append(message)
 	if _state.messages.size() > 30: _state.messages.pop_front()

@@ -218,7 +218,7 @@ func _test_csv() -> void:
 	var temporary := ProjectSettings.globalize_path("res://../build/content-test")
 	DirAccess.make_dir_recursive_absolute(temporary)
 	var schema: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(ContentLoader.SCHEMA_PATH))
-	for table in ["items", "effects", "tags", "loadout", "encounters", "rules", "rewards", "routes", "events", "resolutions"]:
+	for table in ["items", "effects", "tags", "loadout", "encounters", "rules", "rewards", "routes", "events", "resolutions", "hazards"]:
 		var csv := FileAccess.open(temporary.path_join(table + ".csv"), FileAccess.WRITE)
 		var columns: Array = schema.tables[table].keys()
 		csv.store_csv_line(PackedStringArray(columns))

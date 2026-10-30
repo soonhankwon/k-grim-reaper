@@ -36,7 +36,7 @@ func _process(delta: float) -> void:
 		_elapsed += delta
 		if _elapsed >= timeout_seconds:
 			cancel()
-			failed.emit("연출 응답 시간이 초과되어 확정된 결과를 표시합니다.")
+			failed.emit("Animation timed out. Showing the confirmed result.")
 		return
 	if _pending.is_empty():
 		_busy = false

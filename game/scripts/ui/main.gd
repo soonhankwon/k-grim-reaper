@@ -1,6 +1,7 @@
 extends Control
 
 const FONT = preload("res://assets/fonts/NotoSansKR.ttf")
+const PIXEL_FONT = preload("res://assets/fonts/Galmuri11-ui-360.res")
 const PAPER := Color("e5dfcb")
 const MUTED := Color("9caba6")
 const GOLD := Color("dac18c")
@@ -9,8 +10,12 @@ const TEAL := Color("88cbb7")
 @export var save_enabled := true
 @export var save_path := SaveService.DEFAULT_PATH
 @export var story_path := StoryBook.PATH
+@export_file("*.json") var presentation_text_path := ""
 var inventory: InventoryModel
 var session: BattleSession
+var cinematics: SceneCinematics
+var vfx: VfxPlayer
+var sounds: PresentationSound
 var display_inventory: InventoryModel
 var board: InventoryBoard
 var road: RoadView
@@ -38,6 +43,7 @@ var story_forced := false
 var story_entries: Array[Dictionary] = []
 
 func _ready() -> void:
+	DisplayServer.window_set_title("Reaper's Bundle — First Delivery")
 	_install_actions()
 	_build_theme()
 	_build_ui()
@@ -48,8 +54,29 @@ func _ready() -> void:
 	session.event_presented.connect(_on_event_presented)
 	session.playback_recovered.connect(func(reason: String): _notice(reason, true))
 	session.playback.bind_feedback(road)
+	session.playback.bind_board(board)
+	vfx = VfxPlayer.new()
+	vfx.board = board
+	vfx.road = road
+	vfx.z_index = 2
+	layout.add_child(vfx)
+	session.playback.bind_vfx(vfx)
+	sounds = PresentationSound.new()
+	add_child(sounds)
+	cinematics = SceneCinematics.new()
+	cinematics.z_index = 10
+	cinematics.sound = sounds
+	layout.add_child(cinematics)
+	cinematics.skip_button.pressed.connect(func(): session.skip_playback())
+	session.playback.bind_cinematics(cinematics)
+	session.playback.bind_sound(sounds)
+	layout.buttons.sound.pressed.connect(_toggle_sound)
 	if save_enabled: session.save_service = SaveService.new(save_path)
 	_open_run()
+
+func _toggle_sound() -> void:
+	sounds.set_enabled(not sounds.enabled)
+	layout.buttons.sound.text = "Sound On" if sounds.enabled else "Sound Off"
 
 func _install_actions() -> void:
 	for entry in [["rotate_item", KEY_R], ["undo_layout", KEY_Z]]:
@@ -74,19 +101,19 @@ func _style(fill: Color, border: Color = Color("34474a")) -> StyleBoxFlat:
 
 func _build_theme() -> void:
 	theme = Theme.new()
-	var readable_font := FontVariation.new()
-	readable_font.base_font = FONT
-	var weight_axis := TextServerManager.get_primary_interface().name_to_tag("wght")
-	readable_font.variation_opentype = {weight_axis: 500.0}
-	theme.default_font = readable_font
-	theme.default_font_size = 16
+	var pixel_font := FontVariation.new()
+	pixel_font.base_font = PIXEL_FONT
+	pixel_font.fallbacks = [FONT]
+	theme.default_font = pixel_font
+	theme.set_font("font", "Button", pixel_font)
+	theme.default_font_size = 18
 	theme.set_color("font_color", "Label", PAPER)
 	theme.set_color("font_color", "Button", PAPER)
 	theme.set_color("font_disabled_color", "Button", Color("667b79"))
-	theme.set_stylebox("normal", "Button", _style(Color("4b4135")))
-	theme.set_stylebox("hover", "Button", _style(Color("66553e"), TEAL))
-	theme.set_stylebox("pressed", "Button", _style(Color("796344"), GOLD))
-	theme.set_stylebox("disabled", "Button", _style(Color("19272c"), Color("29393c")))
+	theme.set_stylebox("normal", "Button", WoodcutSkin.box("button"))
+	theme.set_stylebox("hover", "Button", WoodcutSkin.box("hover"))
+	theme.set_stylebox("pressed", "Button", WoodcutSkin.box("pressed"))
+	theme.set_stylebox("disabled", "Button", WoodcutSkin.box("disabled"))
 	theme.set_stylebox("focus", "Button", _style(Color(0,0,0,0), GOLD))
 	theme.set_stylebox("background", "ProgressBar", _style(Color("26383a"), Color("26383a")))
 	theme.set_stylebox("fill", "ProgressBar", _style(Color("a66857"), Color("a66857")))
@@ -128,21 +155,21 @@ func _build_ui() -> void:
 	board.preview_changed.connect(_preview)
 	board.synergy_changed.connect(_on_synergy_changed)
 	restart_dialog = ConfirmationDialog.new()
-	restart_dialog.title = "첫 인도 연습"
-	restart_dialog.dialog_text = "보따리와 전투를 처음 상태로 되돌릴까요?"
-	restart_dialog.ok_button_text = "다시 시작"
-	restart_dialog.cancel_button_text = "계속하기"
+	restart_dialog.title = "First Delivery"
+	restart_dialog.dialog_text = "Restart this run from the beginning?"
+	restart_dialog.ok_button_text = "Restart"
+	restart_dialog.cancel_button_text = "Continue"
 	restart_dialog.confirmed.connect(_reset_run)
 	add_child(restart_dialog)
 
 func _open_run() -> void:
-	var next_inventory := ItemCatalog.create_inventory(content_path)
+	var next_inventory := _load_inventory()
 	if next_inventory == null:
-		_notice("콘텐츠 로드 실패: " + ItemCatalog.last_error, true)
+		_notice("Content load failed: " + ItemCatalog.last_error, true)
 		return
 	if session.save_service == null:
 		_install_run(next_inventory)
-		_notice("물건의 효과를 읽고 인접 조건에 맞게 보따리를 정리하세요.")
+		_notice("Read each item and arrange your bag to build synergies.")
 		return
 	var loaded := session.save_service.load_slot(next_inventory)
 	if loaded.status == "ok":
@@ -150,34 +177,34 @@ func _open_run() -> void:
 		next_inventory.history = loaded.history
 		_install_run(next_inventory, loaded.state)
 		if loaded.get("recovered", false):
-			_notice("이전 정상 저장을 불러왔습니다. 최근 행동이 누락될 수 있습니다.", true)
+			_notice("Restored the previous save. Recent actions may be missing.", true)
 			var recovered := AcceptDialog.new()
-			recovered.title = "이전 저장에서 복구"
-			recovered.dialog_text = "현재 저장을 읽을 수 없어 이전 정상 저장을 불러왔습니다. 최근 행동이 누락될 수 있으니 진행 상태를 확인해 주세요. 손상된 원본은 다음 저장 시 별도로 보관합니다."
+			recovered.title = "Save Restored"
+			recovered.dialog_text = "The current save could not be read. An earlier save was restored; recent actions may be missing. The damaged file will be preserved separately on the next save."
 			add_child(recovered)
 			recovered.popup_centered()
-		else: _notice("이전 저장을 새 경로 구조로 복원했습니다." if loaded.get("migrated", false) else "마지막으로 확정된 상태를 이어갑니다.")
+		else: _notice("Restored the previous save to the current route format." if loaded.get("migrated", false) else "Continuing from the last saved state.")
 	elif loaded.status == "missing":
 		var error := session.prepare_new(next_inventory)
 		_install_run(next_inventory)
-		_notice("저장 준비 실패: " + error if not error.is_empty() else "물건의 효과를 읽고 보따리를 정리하세요.", not error.is_empty())
+		_notice("Could not prepare save: " + error if not error.is_empty() else "Read item effects and arrange your bag.", not error.is_empty())
 	else:
 		_save_blocked = true
 		_install_run(next_inventory)
-		_notice("이어하기 불가 · " + str(loaded.error), true)
+		_notice("Cannot continue · " + str(loaded.error), true)
 		if session.save_service.can_archive():
 			recovery_dialog = ConfirmationDialog.new()
-			recovery_dialog.title = "저장 파일 확인 필요"
-			recovery_dialog.dialog_text = str(loaded.error) + "\n\n기존 저장과 이전 정상본을 보관하고 새로 시작할까요? 기존 진행을 바로 이어갈 수는 없습니다."
-			recovery_dialog.ok_button_text = "보관하고 새로 시작"
-			recovery_dialog.cancel_button_text = "닫기"
+			recovery_dialog.title = "Save File Needs Attention"
+			recovery_dialog.dialog_text = str(loaded.error) + "\n\nArchive the existing saves and start a new run? Your old progress cannot be resumed directly."
+			recovery_dialog.ok_button_text = "Archive and Restart"
+			recovery_dialog.cancel_button_text = "Close"
 			recovery_dialog.confirmed.connect(_archive_new_run)
 			add_child(recovery_dialog)
 			recovery_dialog.popup_centered()
 		else:
 			var alert := AcceptDialog.new()
-			alert.title = "저장 파일 확인 필요"
-			alert.dialog_text = str(loaded.error) + "\n\n기존 파일을 보존하기 위해 진행을 잠갔습니다. 게임을 종료한 뒤 저장 폴더를 확인하세요:\n" + session.save_service.path.get_base_dir()
+			alert.title = "Save File Needs Attention"
+			alert.dialog_text = str(loaded.error) + "\n\nProgress is locked to protect your save. Close the game and check the save folder:\n" + session.save_service.path.get_base_dir()
 			add_child(alert)
 			alert.popup_centered()
 
@@ -188,31 +215,40 @@ func _show_restart() -> void:
 
 func _archive_new_run() -> void:
 	if not _save_blocked: return
-	var next_inventory := ItemCatalog.create_inventory(content_path)
+	var next_inventory := _load_inventory()
 	if next_inventory == null:
-		_notice("콘텐츠 로드 실패: " + ItemCatalog.last_error, true)
+		_notice("Content load failed: " + ItemCatalog.last_error, true)
 		return
 	var error := session.prepare_archived_new(next_inventory)
 	if not error.is_empty():
 		_refresh()
-		_notice("기존 저장 보관 실패: " + error, true)
+		_notice("Could not archive save: " + error, true)
 		return
 	_save_blocked = false
 	_install_run(next_inventory)
-	_notice("기존 저장을 보관하고 새 인도를 시작합니다.")
+	_notice("Previous saves archived. Starting a new delivery.")
 
 func _reset_run() -> void:
 	if _save_blocked: return
-	var next_inventory := ItemCatalog.create_inventory(content_path)
+	var next_inventory := _load_inventory()
 	if next_inventory == null:
-		_notice("콘텐츠 로드 실패: " + ItemCatalog.last_error, true)
+		_notice("Content load failed: " + ItemCatalog.last_error, true)
 		return
 	var error := session.prepare_new(next_inventory)
 	if not error.is_empty():
-		_notice("저장 실패 · 현재 진행을 유지합니다: " + error, true)
+		_notice("Save failed · current progress preserved: " + error, true)
 		return
 	_install_run(next_inventory)
-	_notice("물건의 효과를 읽고 인접 조건에 맞게 보따리를 정리하세요.")
+	_notice("Read each item and arrange your bag to build synergies.")
+
+func _load_inventory() -> InventoryModel:
+	var result := ItemCatalog.create_inventory(content_path)
+	if result == null: return null
+	var error := PresentationLocale.apply(result, presentation_text_path)
+	if not error.is_empty():
+		ItemCatalog.last_error = error
+		return null
+	return result
 
 func _install_run(next_inventory: InventoryModel, initial: Dictionary = {}) -> void:
 	if inventory != null and inventory.changed.is_connected(session.refresh_layout):
@@ -224,6 +260,7 @@ func _install_run(next_inventory: InventoryModel, initial: Dictionary = {}) -> v
 	_event_selection = ""
 	story_forced = false
 	inventory = next_inventory
+	board.stop_placement_feedback()
 	board.select("", 0)
 	board.cancel_motion()
 	inventory.changed.connect(session.refresh_layout)
@@ -239,8 +276,12 @@ func _refresh() -> void:
 	display_inventory.config = view.config
 	display_inventory.items = view.inventory_items.duplicate(true)
 	display_inventory.locked = _save_blocked or session.is_busy() or view.phase in ["battle", "route", "event_result", "defeat", "complete"]
+	if display_inventory.locked: board.stop_placement_feedback()
 	board.model = display_inventory
+	board.display_state = view
+	board.hazards = InventoryRules.active_hazards(view)
 	board.presentation_busy = session.is_busy()
+	if display_inventory.locked and (board.dragging or not board.pressed_uid.is_empty()): board.cancel_motion()
 	var reward: Dictionary = view.get("reward", {})
 	if view.phase == "reward":
 		if _reward_selection != reward.selected and display_inventory.items.has(reward.uid):
@@ -265,66 +306,80 @@ func _refresh() -> void:
 	board.queue_redraw()
 	road.player_visual = view.config.player_visual
 	road.enemy_visual = CombatSimulator.enemy(view).visual
-	var background := PresentationArt.background_for_actor(str(road.enemy_visual.get("presentation_id", "")))
+	var background := PresentationArt.background_for_visual(road.enemy_visual)
 	if layout.background_texture != background:
 		layout.background_texture = background
 		layout.queue_redraw()
 	road.defeated = view.phase in ["reward", "victory", "route", "complete"]
+	road.enemy_lost = int(view.enemy_health) <= 0
 	road.queue_redraw()
-	labels.chapter.text = "길목 %02d / %02d  ·  %s" % [RouteRules.step(view) + 1, view.config.encounters.size(), "전투 중 · %d턴" % view.turn if view.phase == "battle" else "인도 준비"]
+	labels.chapter.text = "Stage %02d / %02d  ·  %s" % [RouteRules.step(view) + 1, view.config.encounters.size(), "Battle · Turn %d" % view.turn if view.phase == "battle" else "Prepare"]
 	var resolution: Dictionary = EventRules.resolution(view)
 	var scenario: Array = view.config.get("resolutions", [])
 	if not scenario.is_empty():
 		var total: int = int(view.config.events[0].step) + 2
-		labels.chapter.text = "길목 %02d / %02d  ·  %s" % [mini(RouteRules.step(view) + 1, total), total, "전투 중 · %d턴" % view.turn if view.phase == "battle" else "인도 준비"]
+		labels.chapter.text = "Stage %02d / %02d  ·  %s" % [mini(RouteRules.step(view) + 1, total), total, "Battle · Turn %d" % view.turn if view.phase == "battle" else "Prepare"]
 	labels.enemy.text = CombatSimulator.enemy(view).name
 	enemy_bar.max_value = CombatSimulator.enemy(view).hp
 	enemy_bar.value = view.enemy_health
-	labels.enemy_hp.text = "응어리 %d / %d  ·  방어 %d" % [view.enemy_health, CombatSimulator.enemy(view).hp, view.enemy_guard]
+	labels.enemy_hp.text = "Spirit %d / %d  ·  Block %d" % [view.enemy_health, CombatSimulator.enemy(view).hp, view.enemy_guard]
 	var intent := CombatSimulator.intent(view)
-	labels.intent.text = "다음 행동  ·  %s %d" % [EffectText.operation(intent.operation), intent.amount]
+	labels.intent.text = "Next · " + EffectText.intent(intent)
+	var intent_size := 20
+	var intent_font: Font = labels.intent.get_theme_font("font")
+	while intent_size > 16 and intent_font.get_string_size(labels.intent.text, HORIZONTAL_ALIGNMENT_LEFT, -1, intent_size).x > labels.intent.size.x:
+		intent_size -= 2
+	labels.intent.add_theme_font_size_override("font_size", intent_size)
+	layout.intent_icon.set_operation(str(intent.operation))
+	var enemy_reactions := EffectText.enemy_reactions(CombatSimulator.enemy(view).reactions)
+	labels.enemy_reactions.text = "\n".join(enemy_reactions)
+	layout.reaction_panel.visible = not enemy_reactions.is_empty() and view.phase in ["packing", "battle"]
+	labels.enemy_reactions.visible = layout.reaction_panel.visible
 	_refresh_turn_preview(view)
 	hero_bar.max_value = view.config.max_health
 	hero_bar.value = view.health
-	labels.hero.text = "체력 %d / %d   ·   방어 %d" % [view.health, view.config.max_health, view.guard]
-	labels.energy.text = "기력 %d / %d" % [view.energy, view.config.energy_per_turn]
-	labels.log.text = "\n".join(view.messages.slice(maxi(0, view.messages.size() - 2)))
+	labels.hero.text = "HP %d / %d   ·   Block %d" % [view.health, view.config.max_health, view.guard]
+	labels.energy.text = "Energy %d/%d" % [view.energy, view.config.energy_per_turn]
+	var messages: PackedStringArray = []
+	for message: String in view.messages.slice(maxi(0, view.messages.size() - 2)):
+		messages.append(_display_message(message))
+	labels.log.text = "\n".join(messages)
 	var story_unlocked := StoryBook.unlocked(view, story_entries)
 	var teaser: Button = layout.buttons.story_teaser
 	teaser.visible = not _save_blocked and not session.is_busy() and view.phase in ["packing", "victory", "complete"] and not story_unlocked.is_empty()
 	if teaser.visible:
 		var latest: Dictionary = story_unlocked.back()
-		teaser.text = "사연 · %s  ›\n%s" % [latest.title, latest.teaser]
+		teaser.text = "Story · %s  ›\n%s" % [latest.title, latest.teaser]
 	layout.buttons.story.disabled = _save_blocked or story_unlocked.is_empty()
-	layout.buttons.story.text = "사연 %d" % story_unlocked.size() if not story_unlocked.is_empty() else "사연"
-	labels.bag.text = "보따리   %d / %d" % [display_inventory.used_cells(), display_inventory.dimensions.x * display_inventory.dimensions.y]
+	layout.buttons.story.text = "Story %d" % story_unlocked.size() if not story_unlocked.is_empty() else "Story"
+	labels.bag.text = "Bag   %d / %d" % [display_inventory.used_cells(), display_inventory.dimensions.x * display_inventory.dimensions.y]
 	var attack_totals := InventoryRules.totals(view.packed_items, "use", "enemy")
 	var guard_totals := InventoryRules.totals(view.packed_items, "turn_end")
-	labels.passive.text = "효과 수치를 계산할 수 없습니다" if not attack_totals.error.is_empty() or not guard_totals.error.is_empty() else "공격 합계 %d   ·   턴 종료 방어 +%d" % [attack_totals.damage, guard_totals.guard]
+	labels.passive.text = "Cannot calculate effects" if not attack_totals.error.is_empty() or not guard_totals.error.is_empty() else "ATK %d · End Block +%d" % [attack_totals.damage, guard_totals.guard]
 	match view.phase:
-		"packing": primary.text = "전투 시작"
-		"battle": primary.text = "턴 종료"
-		"reward": primary.text = "보상 확정" if display_inventory.is_packed(reward.uid) else "보따리에 보상을 넣으세요"
-		"route": primary.text = "아래에서 길을 선택하세요"
-		"event": primary.text = "유품 챙기기 확정" if view.event.selected == "take" and (display_inventory.is_packed(view.event.uid) or resolution.get("allow_stash", false)) else "유품을 보따리에 넣으세요"
-		"event_result": primary.text = "사건 마치기"
-		"victory": primary.text = "인도 마치기" if RouteRules.last(view) else ("길가로 이동" if not EventRules.due(view).is_empty() else ("갈림길로 이동" if RouteRules.enabled(view) and view.route.choice.is_empty() else "다음 길목 준비"))
-		"defeat": primary.text = "귀환 · 다시 시작"
-		"complete": primary.text = "다시 연습하기"
+		"packing": primary.text = "Start Battle"
+		"battle": primary.text = "End Turn"
+		"reward": primary.text = "Confirm Reward" if display_inventory.is_packed(reward.uid) else "Place reward in bag"
+		"route": primary.text = "Choose a path below"
+		"event": primary.text = "Confirm Keepsake" if view.event.selected == "take" and (display_inventory.is_packed(view.event.uid) or resolution.get("allow_stash", false)) else "Place keepsake in bag"
+		"event_result": primary.text = "Finish Event"
+		"victory": primary.text = "Finish Delivery" if RouteRules.last(view) else ("Continue to Event" if not EventRules.due(view).is_empty() else ("Choose a Path" if RouteRules.enabled(view) and view.route.choice.is_empty() else "Next Encounter"))
+		"defeat": primary.text = "Return · Restart"
+		"complete": primary.text = "Restart Run"
 	if view.phase == "complete":
-		labels.chapter.text = str(scenario[0].completion_title) if not scenario.is_empty() else "첫 인도 연습 완료"
-		labels.intent.text = "무사히 길을 열었습니다."
+		labels.chapter.text = str(scenario[0].completion_title) if not scenario.is_empty() else "First Delivery Complete"
+		labels.intent.text = "The way is clear."
 	elif view.phase == "defeat":
-		labels.chapter.text = "선배와 함께 귀환"
-		labels.intent.text = "보따리를 바꿔 다시 도전하세요."
+		labels.chapter.text = "Returned with your mentor"
+		labels.intent.text = "Rearrange your bag and try again."
 	elif view.phase == "victory":
-		labels.intent.text = "길이 열렸습니다 · 보따리를 정리하세요"
+		labels.intent.text = "The way is clear · Arrange your bag"
 	elif view.phase == "reward":
-		labels.chapter.text = "길목 %02d 완료 · 보상과 재정비" % (RouteRules.step(view) + 1)
+		labels.chapter.text = "Stage %02d complete · Reward and preparation" % (RouteRules.step(view) + 1)
 	elif view.phase == "route":
-		labels.chapter.text = "첫 길목 완료 · 갈림길"
+		labels.chapter.text = "First stage complete · Choose a path"
 	elif view.phase in ["event", "event_result"]:
-		labels.chapter.text = "인도 중 만난 사연"
+		labels.chapter.text = "An encounter on the road"
 	layout.preparation.visible = view.phase in ["packing", "reward", "victory", "event"]
 	layout.rewards.refresh(view, display_inventory.definitions, session.is_busy())
 	layout.routes.refresh(view, session.is_busy())
@@ -332,21 +387,30 @@ func _refresh() -> void:
 	layout.buttons.reward_skip.visible = view.phase == "reward" and not session.is_busy()
 	layout.buttons.reward_skip.disabled = _save_blocked or session.is_busy()
 	layout.buttons.restart.disabled = _save_blocked and (session.save_service == null or not session.save_service.can_archive())
-	layout.buttons.restart.text = "저장 복구" if _save_blocked else "다시 시작"
+	layout.buttons.restart.text = "Restore Save" if _save_blocked else "Restart"
 	for key in ["enemy", "enemy_hp", "hero", "hero_name", "energy", "intent", "log"]:
 		labels[key].visible = view.phase not in ["reward", "route", "event", "event_result"]
+	layout.intent_icon.visible = labels.intent.visible and view.phase in ["packing", "battle"]
 	if layout.buttons.story_teaser.visible: labels.log.hide()
 	hero_bar.visible = view.phase not in ["reward", "route", "event", "event_result"]
 	enemy_bar.visible = view.phase not in ["reward", "route", "event", "event_result"]
 	labels.notice.position = Vector2(320, 446) if view.phase in ["reward", "route", "event", "event_result"] else Vector2(360, 452)
 	labels.notice.size = Vector2(620, 38) if view.phase in ["reward", "route", "event", "event_result"] else Vector2(385, 48)
-	labels.help.text = "물건 클릭: 사용   ·   마우스 올리기: 효과 확인   ·   우측 버튼: 턴 종료" if view.phase == "battle" else "드래그 / 선택 후 빈칸 클릭: 배치   ·   R: 회전   ·   Ctrl+Z: 되돌리기   ·   Esc / 우클릭: 취소"
-	if view.phase == "reward": labels.help.text = "확정 전 후보 변경 가능 · 선택한 보상은 보관대에 표시 · 기존 물건은 꺼내기로 공간 확보 · Ctrl+Z: 배치 되돌리기"
-	if view.phase == "event": labels.help.text = "유품은 보관대에 두고 확정할 수 있습니다. 후속 선택을 위해서는 다음 전투 전 보따리에 넣으세요." if resolution.get("allow_stash", false) else "유품을 선택하면 보관대에 나타납니다. 보따리에 넣고 확정하거나 그 자리에 두세요."
-	if view.phase == "event_result": labels.help.text = "이번 선택의 결과를 확인하고 사건 마치기를 누르세요."
-	if view.phase == "route": labels.help.text = "각 경로의 첫 적과 이후 순서를 확인하고 선택하세요. 선택한 길은 자동 저장됩니다."
+	if layout.reaction_panel.visible:
+		labels.notice.position.y = 464
+		labels.notice.size.y = 44
+	labels.help.text = "Click item: use · Hover: details · Right button: end turn" if view.phase == "battle" else "Drag or click empty cell: place · R: rotate · Ctrl+Z: undo · Esc / right click: cancel"
+	if view.phase == "reward": labels.help.text = "Switch rewards before confirming · Move items to storage for space · Ctrl+Z: undo"
+	if view.phase == "event": labels.help.text = "You may keep the evidence in storage. Put it in your bag before the next battle to use it." if resolution.get("allow_stash", false) else "The keepsake appears in storage. Place it in your bag to keep it, or leave it behind."
+	if view.phase == "event_result": labels.help.text = "Review the outcome, then finish the event."
+	if view.phase == "route": labels.help.text = "Compare the paths and enemies. Your choice is saved automatically."
+	if not board.hazards.is_empty():
+		var hazard: Dictionary = board.hazards[0]
+		var targets: PackedStringArray = []
+		for tag: String in hazard.required_tags: targets.append(str(view.config.tag_labels.get(tag, tag)))
+		labels.help.text = "%s · %s on marked cells costs +%d energy · %s" % [hazard.label, "/".join(targets), hazard.cost_increase, hazard.description]
 	if _save_blocked:
-		labels.help.text = "저장 복구 버튼에서 기존 파일을 보관하고 새로 시작할 수 있습니다." if session.save_service != null and session.save_service.can_archive() else "저장 파일을 보호하기 위해 진행이 잠겼습니다. 게임을 종료한 뒤 저장 폴더를 확인하세요."
+		labels.help.text = "Use Restore Save to archive your existing files and start a new run." if session.save_service != null and session.save_service.can_archive() else "Progress is locked to protect your save. Close the game and check the save folder."
 	_rebuild_stash()
 	_refresh_details()
 	undo_button.disabled = _save_blocked or session.is_busy() or inventory.locked or inventory.history.is_empty()
@@ -357,35 +421,38 @@ func _refresh() -> void:
 	resolution_button.visible = not _save_blocked and not session.is_busy() and view.phase == "battle" and not resolution.is_empty() and not event_entry.is_empty() and event.get("status", "") in ["carried", "left"] and RouteRules.step(view) == int(event_entry.step) + 1
 	var eligible: bool = event.get("status", "") == "carried" and view.packed_items.has(event.get("uid", ""))
 	resolution_button.disabled = not eligible
-	resolution_button.text = str(resolution.get("button", "")) if eligible else "증거를 보따리에 넣어야 합니다"
+	resolution_button.text = str(resolution.get("button", "")) if eligible else "Place evidence in your bag"
 	resolution_button.tooltip_text = str(resolution.get("button", "")) if eligible else str(resolution.get("unavailable", ""))
 	skip_button.disabled = not session.is_busy()
 	skip_button.visible = session.is_busy()
-	if session.is_busy(): primary.text = "연출 재생 중…"
+	if session.is_busy(): primary.text = "Playing…"
 
 func _refresh_turn_preview(view: Dictionary) -> void:
 	layout.turn_preview.visible = view.phase == "battle" and not session.is_busy() and not _save_blocked
 	if not layout.turn_preview.visible: return
 	var result := session.preview_end_turn()
 	if not result.error.is_empty():
-		labels.preview_summary.text = "결과를 예측할 수 없습니다"
+		labels.preview_summary.text = "Cannot predict outcome"
 		labels.preview_body.text = result.error
 		return
 	var after := result.after()
 	var damage := 0
+	var absorbed := 0
 	var victory := false
 	var lines: Array[String] = []
 	for event: Dictionary in result.events():
 		if event.kind == "turn_started": continue
-		if event.kind == "damage" and event.target == "player": damage += int(event.health_damage)
+		if event.kind == "damage" and event.target == "player":
+			damage += int(event.health_damage)
+			absorbed += int(event.get("absorbed", 0))
 		if event.kind == "victory": victory = true
 		var target := ""
-		if event.get("target", "") == "player": target = "나 · "
-		elif event.get("target", "") == "enemy": target = "적 · "
+		if event.get("target", "") == "player": target = "You · "
+		elif event.get("target", "") == "enemy": target = "Enemy · "
 		lines.append(target + str(event.message))
-	var outcome := " · 패배" if after.phase == "defeat" else (" · 승리" if victory else "")
-	labels.preview_summary.text = "예상 피해 %d · 종료 체력 %d%s" % [damage, after.health, outcome]
-	labels.preview_body.text = "\n".join(lines) if not lines.is_empty() else "추가 효과 없음"
+	var outcome := " · Defeat" if after.phase == "defeat" else (" · Victory" if victory else "")
+	labels.preview_summary.text = "Expected damage %d · Blocked %d\nRemaining HP %d%s" % [damage, absorbed, after.health, outcome]
+	labels.preview_body.text = "\n".join(lines) if not lines.is_empty() else "No additional effects"
 
 func _rebuild_stash() -> void:
 	for child in stash_grid.get_children():
@@ -424,17 +491,22 @@ func _refresh_details() -> void:
 	layout.details.visible = has_details and not guide_forced and not story_forced
 	layout.guide.visible = guide_enabled and not story_forced and (not has_details or guide_forced)
 	layout.story.visible = story_forced and not _save_blocked
-	layout.story.refresh(StoryBook.unlocked(session.display_snapshot(), story_entries))
-	layout.guide.refresh(session.display_snapshot(), session.is_busy(), _save_blocked)
+	var view := session.display_snapshot()
+	var unlocked := StoryBook.unlocked(view, story_entries)
+	layout.story.refresh(unlocked)
+	layout.guide.refresh(view, session.is_busy(), _save_blocked)
+	var teaser: Button = layout.buttons.story_teaser
+	teaser.visible = not story_forced and not _save_blocked and not session.is_busy() and view.phase in ["packing", "victory", "complete"] and not unlocked.is_empty()
+	labels.log.visible = not teaser.visible and view.phase not in ["reward", "route", "event", "event_result"]
+	layout.log_scroll.visible = labels.log.visible
 	_refresh_synergy_info()
 	if not layout.details.visible: return
 	var item: ItemData = display_inventory.definitions[reward_inspected] if candidate else display_inventory.definition(inspected)
 	var detail_uid := "candidate" if candidate else inspected
 	labels.item_name.text = item.display_name
-	labels.item_meta.text = "%d칸  ·  %s" % [item.footprint.size(), "보따리 안" if display_inventory.is_packed(inspected) else "보관대"]
-	if candidate: labels.item_meta.text = "%d칸 · 보상 후보 (인접 효과 미적용)" % item.footprint.size()
+	labels.item_meta.text = "%d cells  ·  %s" % [item.footprint.size(), "In bag" if display_inventory.is_packed(inspected) else "Storage"]
+	if candidate: labels.item_meta.text = "%d cells · reward (no adjacency yet)" % item.footprint.size()
 	labels.description.text = item.description
-	labels.item_meta.text += " · 기력 %d · 턴당 %d회" % [item.cost, item.uses_per_turn]
 	var detail_cells: Array[Vector2i] = []
 	if not candidate: detail_cells = display_inventory.occupied_cells(inspected)
 	var values := ItemCodec.item(item, detail_cells)
@@ -443,17 +515,26 @@ func _refresh_details() -> void:
 	if not candidate and inspected == selected and synergy.mode == "preview" and synergy.items.has(detail_uid):
 		packed = synergy.items
 		values = packed[detail_uid]
-		labels.item_meta.text += "\n배치 예상"
+		labels.item_meta.text += "\nPlacement Preview"
+	var cost := InventoryRules.action_cost(session.display_snapshot(), values)
+	labels.item_meta.text += " · Energy %d%s · %d uses/turn" % [cost.total, " (" + ", ".join(cost.sources) + " +%d)" % cost.extra if cost.extra > 0 else "", item.uses_per_turn]
 	if candidate or not packed.has(detail_uid): packed = {detail_uid: values}
 	labels.power.text = " · ".join(EffectText.lines(values, packed, detail_uid, display_inventory.config.tag_labels))
-	var result := InventoryRules.action_result(packed, detail_uid)
-	labels.sources.text = " · ".join(result.sources)
-	labels.item_hint.text = "자동 효과"
+	labels.sources.text = ""
+	var plans: Array[Dictionary] = []
+	for trigger in ["use", "turn_end", "damage_taken"]:
+		for plan: Dictionary in EffectApplier.plan(packed, detail_uid, trigger): plans.append({"trigger":trigger, "plan":plan})
+	var icons := {}
+	for uid: String in packed:
+		if display_inventory.items.has(uid): icons[uid] = display_inventory.definition(uid)
+		elif candidate and uid == detail_uid: icons[uid] = item
+	layout.synergy_breakdown.refresh(plans, icons)
+	labels.item_hint.text = "Passive"
 	if EffectApplier.has_trigger(values, "use"):
 		var error := session.use_error(inspected)
-		labels.item_hint.text = error if not error.is_empty() else "클릭하여 사용"
-	if not display_inventory.locked: labels.item_hint.text = "드래그하여 배치 · R로 회전"
-	if candidate: labels.item_hint.text = "아래 후보를 클릭해 선택한 뒤 보따리에 놓으세요."
+		labels.item_hint.text = error if not error.is_empty() else "Click to use"
+	if not display_inventory.locked: labels.item_hint.text = "Drag to place · R to rotate"
+	if candidate: labels.item_hint.text = "Select a reward below, then place it in your bag."
 
 func _on_synergy_changed() -> void:
 	if display_inventory == null or session == null: return
@@ -463,10 +544,10 @@ func _refresh_synergy_info() -> void:
 	var view := board.synergy_view()
 	var text := ""
 	match view.mode:
-		"current": text = "현재 연결 · +증가  ×배율  ○조건"
-		"preview": text = "배치 예상 · 점선  +증가  ×배율  ○조건"
-		"invalid": text = "배치 불가 · 연결 미표시"
-		"error": text = "연결 계산 불가"
+		"current": text = "Gold: add · Blue: mult · Red: condition"
+		"preview": text = "Preview · gold / blue / red"
+		"invalid": text = "Invalid placement · links hidden"
+		"error": text = "Cannot calculate links"
 	labels.synergy_state.text = text
 	labels.connections.text = ""
 	if not layout.details.visible or inspected != selected or not reward_inspected.is_empty(): return
@@ -478,12 +559,12 @@ func _refresh_synergy_info() -> void:
 	for link: Dictionary in view.links:
 		var source: String = view.items[link.source].name
 		var target: String = view.items[link.target].name
-		var when: String = {"use":"사용", "turn_end":"턴 종료", "damage_taken":"피해 반응"}[link.trigger]
-		var range_name: String = {"orthogonal":"상하좌우", "diagonal":"대각선", "neighbor":"주변 8칸"}.get(link.range, "자기 자신" if link.source == link.target else "범위")
-		var value := "조건 · 최대 %d개" % link.limit if link.kind == "condition" else ("%s ×%d" % [EffectText.operation(link.operation), link.amount] if link.kind == "multiply" else "%s +%d" % [EffectText.operation(link.operation), link.amount])
+		var when: String = {"use":"Use", "turn_end":"End Turn", "damage_taken":"On damage"}[link.trigger]
+		var range_name: String = {"orthogonal":"Adjacent", "diagonal":"Diagonal", "neighbor":"8 surrounding cells"}.get(link.range, "Self" if link.source == link.target else "Range")
+		var value := "Condition · max %d" % link.limit if link.kind == "condition" else ("%s ×%d" % [EffectText.operation(link.operation), link.amount] if link.kind == "multiply" else "%s +%d" % [EffectText.operation(link.operation), link.amount])
 		lines.append("%s → %s · %s · %s · %s" % [source, target, range_name, when, value])
-	var title := "배치 예상 연결" if view.mode == "preview" else "현재 연결"
-	labels.connections.text = title + ("\n" + "\n".join(lines) if not lines.is_empty() else " · 없음")
+	var title := "Preview links" if view.mode == "preview" else "Current links"
+	labels.connections.text = title + ("\n" + "\n".join(lines) if not lines.is_empty() else " · None")
 
 func _inspect_reward(item_id: String) -> void:
 	story_forced = false
@@ -551,16 +632,30 @@ func _select(uid: String) -> void:
 	layout.detail_scroll.scroll_vertical = 0
 	board.select(uid, display_inventory.items[uid].rotation)
 	_refresh_details()
-	_notice("%s 선택 · %s" % [display_inventory.definition(uid).display_name, "클릭하면 바로 사용합니다." if display_inventory.locked else "드래그하거나 빈칸을 클릭하세요. R로 회전합니다."])
+	_notice("%s selected · %s" % [display_inventory.definition(uid).display_name, "Click to use." if display_inventory.locked else "Drag or click an empty cell. Press R to rotate."])
 
 func _place(uid: String, origin: Vector2i, rotation: int) -> void:
 	if _save_blocked or session.is_busy(): return
+	var before := session.display_snapshot()
+	var previous: Dictionary = before.get("inventory_items", {}).get(uid, {})
+	var previous_origin: Vector2i = previous.get("origin", Vector2i(-1, -1))
+	var old_links := InventoryRules.synergy_links(before.get("packed_items", {}), uid)
 	var error := session.place(uid, origin, rotation)
 	if not error.is_empty():
-		_notice(error + " 원래 배치는 유지됩니다.", true)
+		_notice(error + " Original placement preserved.", true)
 		return
 	board.select(uid, rotation)
-	_notice("%s 배치 완료 · Ctrl+Z로 되돌릴 수 있습니다." % inventory.definition(uid).display_name)
+	var after := session.display_snapshot()
+	var current: Dictionary = after.get("inventory_items", {}).get(uid, {})
+	if previous != current:
+		var next_links := InventoryRules.synergy_links(after.get("packed_items", {}), uid)
+		var new_link := false
+		if old_links.error.is_empty() and next_links.error.is_empty():
+			for link: Dictionary in next_links.links:
+				if link not in old_links.links: new_link = true
+		board.start_placement_feedback(uid, previous_origin, new_link)
+		sounds.cue("snap")
+	_notice("%s placed · Ctrl+Z to undo." % inventory.definition(uid).display_name)
 
 func _preview(origin: Vector2i) -> void:
 	if session.is_busy(): return
@@ -574,12 +669,17 @@ func _preview(origin: Vector2i) -> void:
 			return
 		var changes: PackedStringArray = []
 		var before := inventory.combat_snapshot()
+		var view := session.display_snapshot()
+		if preview.snapshot.has(selected):
+			var old_cost: int = InventoryRules.action_cost(view, before[selected]).total if before.has(selected) else inventory.definition(selected).cost
+			var new_cost: int = InventoryRules.action_cost(view, preview.snapshot[selected]).total
+			if old_cost != new_cost: changes.append("%s energy %d → %d" % [inventory.definition(selected).display_name, old_cost, new_cost])
 		var current_guard := InventoryRules.totals(before, "turn_end")
 		for uid: String in preview.snapshot:
 			var old := InventoryRules.action_result(before, uid)
 			var next := InventoryRules.action_result(preview.snapshot, uid)
 			if not old.error.is_empty():
-				changes.append("%s 계산 불가 → %d" % [inventory.definition(uid).display_name, next.power])
+				changes.append("%s unavailable → %d" % [inventory.definition(uid).display_name, next.power])
 				continue
 			if old.effects != next.effects:
 				for i in next.effects.size():
@@ -587,8 +687,8 @@ func _preview(origin: Vector2i) -> void:
 					var effect: Dictionary = next.effects[i]
 					if previous != effect.amount:
 						changes.append("%s %s %d → %d" % [inventory.definition(uid).display_name, EffectText.operation(effect.kind), previous, effect.amount])
-		changes.append("턴 종료 방어 계산 불가 → %d" % preview.guard if not current_guard.error.is_empty() else "턴 종료 방어 %d → %d" % [current_guard.guard, preview.guard])
-		_notice("배치 예상: " + " · ".join(changes))
+		changes.append("End-turn block unavailable → %d" % preview.guard if not current_guard.error.is_empty() else "End-turn block %d → %d" % [current_guard.guard, preview.guard])
+		_notice("Preview: " + " · ".join(changes))
 	else:
 		_notice(error, true)
 
@@ -596,35 +696,40 @@ func _rotate() -> void:
 	if _save_blocked or session.is_busy(): return
 	if selected.is_empty() or inventory.locked:
 		return
+	board.stop_placement_feedback()
 	board.pending_rotation = posmod(board.pending_rotation + 1, 4)
 	board.grab_offset = Vector2i.ZERO
+	board.drag_anchor = Vector2.ONE * board.cell_size * 0.5
 	board.synergy_changed.emit()
 	board.queue_redraw()
-	_notice("%d° 회전 미리보기 · 빈칸을 클릭해 확정하세요. Esc로 취소합니다." % (board.pending_rotation * 90))
+	_notice("%d° rotation · Click an empty cell to place. Esc cancels." % (board.pending_rotation * 90))
 
 func _cancel() -> void:
 	if _save_blocked or session.is_busy(): return
 	board.cancel_motion()
+	board.stop_placement_feedback()
 	selected = ""
 	inspected = ""
 	reward_inspected = ""
 	board.select("", 0)
 	_refresh_details()
-	_notice("선택을 취소했습니다. 확정된 배치는 유지됩니다.")
+	_notice("Selection canceled. Placed items remain unchanged.")
 
 func _stash_selected() -> void:
 	if _save_blocked or session.is_busy(): return
+	board.stop_placement_feedback()
 	var error := session.stash(selected)
-	if error.is_empty(): _notice("보관대로 옮겼습니다. 빈칸을 클릭해 다시 배치하세요.")
+	if error.is_empty(): _notice("Moved to storage. Click an empty cell to place it again.")
 	else: _notice(error, true)
 
 func _undo() -> void:
 	if _save_blocked or session.is_busy(): return
+	board.stop_placement_feedback()
 	var error := session.undo_layout()
 	if error.is_empty():
 		if inventory.items.has(selected):
 			board.select(selected, inventory.items[selected].rotation)
-		_notice("이전 배치로 되돌렸습니다.")
+		_notice("Previous placement restored.")
 	else: _notice(error, true)
 
 func _primary_action() -> void:
@@ -642,14 +747,17 @@ func _primary_action() -> void:
 func _submit(request: Dictionary) -> void:
 	var error := session.submit(request)
 	if not error.is_empty(): _notice(error, true)
-	else: _notice("행동 결과를 순서대로 재생합니다.")
+	else: _notice("Playing action results in order.")
 
 func _on_event_presented(event: Dictionary) -> void:
 	_notice(event.message)
 
 func _notice(message: String, error := false) -> void:
-	labels.notice.text = message
+	labels.notice.text = _display_message(message)
 	labels.notice.add_theme_color_override("font_color", Color("e9997b") if error else MUTED)
+
+func _display_message(message: String) -> String:
+	return PresentationLocale.message(message) if not presentation_text_path.is_empty() else message
 
 func _unhandled_key_input(event: InputEvent) -> void:
 	if _save_blocked or restart_dialog.visible or session.is_busy():

@@ -1,4 +1,4 @@
 id,order,name,hp,intent_ids,reaction_ids,visual_id
-gate_1,0,두려움에 사로잡힌 포졸,18,encounter_1_intent_1|encounter_1_intent_2,,spirit_1
-gate_2,1,원혼 아랑,24,encounter_2_intent_1|encounter_2_intent_2,,spirit_2
-gate_3,2,원혼 아랑,30,encounter_3_intent_1|encounter_3_intent_2|encounter_3_intent_3,,spirit_3
+gate_1,0,Terrified Guard,18,encounter_1_intent_1|encounter_1_intent_2,,spirit_1
+gate_2,1,"Arang, Restless Spirit",30,encounter_2_intent_1|encounter_2_intent_2,,spirit_2
+gate_3,2,"Arang, Restless Spirit",24,encounter_3_intent_1|encounter_3_intent_2|encounter_3_intent_3,arang_pain_reaction,spirit_3

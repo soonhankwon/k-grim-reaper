@@ -26,7 +26,10 @@ func combat(main: Control) -> bool:
 	return main.session.display_snapshot().phase in ["reward", "event_result"]
 
 func read_slot(slot: String) -> Dictionary:
-	return SaveService.new(slot).load_slot(ItemCatalog.create_inventory(Experiment.CONTENT_PATH))
+	var model := ItemCatalog.create_inventory(Experiment.CONTENT_PATH)
+	var error := PresentationLocale.apply(model, Experiment.TEXT_PATH)
+	if not error.is_empty(): return {"status":"error", "error":error}
+	return SaveService.new(slot).load_slot(model)
 
 func saved(main: Control, slot: String, label: String) -> void:
 	var result := read_slot(slot)
@@ -68,7 +71,7 @@ func _test_csv() -> void:
 	var dir := base.path_join("csv")
 	DirAccess.make_dir_recursive_absolute(dir)
 	var source := ProjectSettings.globalize_path("res://../content/source")
-	for name in ["items.csv", "effects.csv", "tags.csv", "loadout.csv", "encounters.csv", "rules.csv", "rewards.csv", "routes.csv", "events.csv", "art.json"]:
+	for name in ["items.csv", "effects.csv", "tags.csv", "loadout.csv", "encounters.csv", "rules.csv", "rewards.csv", "routes.csv", "events.csv", "hazards.csv", "art.json"]:
 		check(DirAccess.copy_absolute(source.path_join(name), dir.path_join(name)) == OK, "copy CSV " + name)
 	var path := dir.path_join("resolutions.csv")
 	check(not ContentLoader.new().load_csv_directory(dir).error.is_empty(), "missing resolutions sheet is rejected")
@@ -133,7 +136,7 @@ func _test_run(kind: String) -> void:
 		var fresh := Experiment.create(root, slot)
 		check(fresh != null and fresh.session.display_snapshot() == main.session.state_snapshot(), "new UI restores committed result without replay")
 		if fresh != null:
-			check(fresh.layout.encounter_event.description.text == Experiment.load_resolution().result, "restored resolution text visible")
+			check(fresh.layout.encounter_event.description.text == fresh.inventory.config.resolutions[0].result, "restored localized resolution text visible")
 			fresh.queue_free()
 		main.session.skip_playback()
 		var doc: Dictionary = JSON.parse_string(JSON.parse_string(FileAccess.get_file_as_string(slot)).payload)

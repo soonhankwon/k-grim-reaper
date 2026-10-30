@@ -3,6 +3,7 @@ extends RefCounted
 ## Authoritative transaction store. Only BattleSession submits requests in the game.
 ## Pure simulation returns a complete result before any canonical state is changed.
 
+var ruleset: RefCounted
 var inventory: InventoryModel
 var _state: Dictionary
 var phase: String:
@@ -24,7 +25,8 @@ var turn: int:
 var used: Dictionary:
 	get: return _state.used.duplicate(true)
 
-func _init(model: InventoryModel, initial: Dictionary = {}) -> void:
+func _init(model: InventoryModel, initial: Dictionary = {}, custom_rules: RefCounted = null) -> void:
+	ruleset = custom_rules
 	inventory = model
 	_state = CombatSimulator.initial_state(model.config) if initial.is_empty() else initial.duplicate(true)
 
@@ -43,7 +45,7 @@ func simulate(request: Dictionary) -> CombatResolution:
 	var is_reward: bool = str(request.get("type", "")).begins_with("reward_")
 	if is_reward: return RewardRules.resolve(snapshot(), request)
 	if str(request.get("type", "")).begins_with("event_"): return EventRules.resolve(snapshot(), request)
-	return CombatSimulator.resolve(snapshot(), request)
+	return CombatSimulator.resolve(snapshot(), request) if ruleset == null else ruleset.resolve(snapshot(), request)
 
 func clears_history(result: CombatResolution, request: Dictionary) -> bool:
 	return request.get("type", "") == "start" or str(request.get("type", "")).begins_with("reward_") or str(request.get("type", "")).begins_with("event_") or inventory.items.size() != result.after().inventory_items.size()
@@ -63,7 +65,7 @@ func intent() -> Dictionary:
 	return CombatSimulator.intent(_state)
 
 func use_error(uid: String) -> String:
-	return CombatSimulator.use_error(snapshot(), uid)
+	return CombatSimulator.use_error(snapshot(), uid) if ruleset == null else ruleset.use_error(snapshot(), uid)
 
 # Synchronous helpers for headless rule tests; gameplay goes through BattleSession.
 func start_battle() -> String:

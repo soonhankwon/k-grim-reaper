@@ -66,7 +66,7 @@ func _run() -> void:
 			check(not main.session.submit({"type":"resolve_encounter"}).is_empty(), "double input blocked during playback")
 			main.session.skip_playback()
 			check(main.session.display_snapshot().event.get("method") == "resolution", "peaceful ending recorded")
-			check(main.layout.encounter_event.description.text == Experiment.load_resolution().result, "peaceful ending visible")
+			check(main.layout.encounter_event.description.text == main.inventory.config.resolutions[0].result, "localized peaceful ending visible")
 		else:
 			check(not main.session.submit({"type":"resolve_encounter"}).is_empty() and main.session.state_snapshot() == before, "missing or stashed evidence cannot resolve")
 			check(win_by_combat(main), "fight can end encounter from actual state")

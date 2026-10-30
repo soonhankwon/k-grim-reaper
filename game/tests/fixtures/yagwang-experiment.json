@@ -1,0 +1,2019 @@
+{
+  "art": {
+    "actors": {
+      "reaper": {
+        "parts": [
+          [
+            10.0,
+            1.0,
+            12.0,
+            9.0,
+            "101a24"
+          ],
+          [
+            11.0,
+            2.0,
+            3.0,
+            7.0,
+            "35444a"
+          ],
+          [
+            5.0,
+            10.0,
+            23.0,
+            3.0,
+            "101a24"
+          ],
+          [
+            5.0,
+            10.0,
+            23.0,
+            1.0,
+            "495550"
+          ],
+          [
+            12.0,
+            13.0,
+            9.0,
+            6.0,
+            "ceb38c"
+          ],
+          [
+            18.0,
+            14.0,
+            2.0,
+            2.0,
+            "302f31"
+          ],
+          [
+            7.0,
+            18.0,
+            18.0,
+            13.0,
+            "16212b"
+          ],
+          [
+            10.0,
+            19.0,
+            4.0,
+            11.0,
+            "34444a"
+          ],
+          [
+            14.0,
+            19.0,
+            4.0,
+            2.0,
+            "b6b6a0"
+          ],
+          [
+            17.0,
+            21.0,
+            2.0,
+            9.0,
+            "54635f"
+          ],
+          [
+            5.0,
+            29.0,
+            22.0,
+            3.0,
+            "101a24"
+          ],
+          [
+            8.0,
+            32.0,
+            7.0,
+            2.0,
+            "101a24"
+          ],
+          [
+            21.0,
+            32.0,
+            7.0,
+            2.0,
+            "101a24"
+          ],
+          [
+            2.0,
+            20.0,
+            6.0,
+            9.0,
+            "657e66"
+          ],
+          [
+            3.0,
+            21.0,
+            3.0,
+            6.0,
+            "97aa7a"
+          ],
+          [
+            23.0,
+            21.0,
+            6.0,
+            9.0,
+            "cbb880"
+          ],
+          [
+            25.0,
+            23.0,
+            1.0,
+            4.0,
+            "9b5f49"
+          ]
+        ]
+      },
+      "spirit_1": {
+        "parts": [
+          [
+            10.0,
+            3.0,
+            14.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            7.0,
+            7.0,
+            20.0,
+            21.0,
+            "a3bcad"
+          ],
+          [
+            9.0,
+            8.0,
+            4.0,
+            17.0,
+            "d4d6b7"
+          ],
+          [
+            4.0,
+            16.0,
+            4.0,
+            8.0,
+            "a3bcad"
+          ],
+          [
+            26.0,
+            13.0,
+            4.0,
+            10.0,
+            "a3bcad"
+          ],
+          [
+            10.0,
+            27.0,
+            5.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            19.0,
+            27.0,
+            5.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            12.0,
+            11.0,
+            3.0,
+            3.0,
+            "29383a"
+          ],
+          [
+            21.0,
+            11.0,
+            3.0,
+            3.0,
+            "29383a"
+          ],
+          [
+            16.0,
+            17.0,
+            4.0,
+            3.0,
+            "5a6d64"
+          ]
+        ]
+      },
+      "spirit_2": {
+        "parts": [
+          [
+            8.5,
+            3.0,
+            17.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            5.5,
+            7.0,
+            23.0,
+            21.0,
+            "a3bcad"
+          ],
+          [
+            7.5,
+            8.0,
+            4.0,
+            17.0,
+            "d4d6b7"
+          ],
+          [
+            2.5,
+            16.0,
+            4.0,
+            8.0,
+            "a3bcad"
+          ],
+          [
+            27.5,
+            13.0,
+            4.0,
+            10.0,
+            "a3bcad"
+          ],
+          [
+            8.5,
+            27.0,
+            5.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            20.5,
+            27.0,
+            5.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            12.0,
+            11.0,
+            3.0,
+            3.0,
+            "29383a"
+          ],
+          [
+            21.0,
+            11.0,
+            3.0,
+            3.0,
+            "29383a"
+          ],
+          [
+            16.0,
+            17.0,
+            4.0,
+            3.0,
+            "5a6d64"
+          ],
+          [
+            9.0,
+            2.0,
+            18.0,
+            3.0,
+            "746c55"
+          ],
+          [
+            11.0,
+            0.0,
+            14.0,
+            2.0,
+            "9a8b64"
+          ]
+        ]
+      },
+      "spirit_3": {
+        "parts": [
+          [
+            7.0,
+            3.0,
+            20.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            4.0,
+            7.0,
+            26.0,
+            21.0,
+            "a3bcad"
+          ],
+          [
+            6.0,
+            8.0,
+            4.0,
+            17.0,
+            "d4d6b7"
+          ],
+          [
+            1.0,
+            16.0,
+            4.0,
+            8.0,
+            "a3bcad"
+          ],
+          [
+            29.0,
+            13.0,
+            4.0,
+            10.0,
+            "a3bcad"
+          ],
+          [
+            7.0,
+            27.0,
+            5.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            22.0,
+            27.0,
+            5.0,
+            4.0,
+            "a3bcad"
+          ],
+          [
+            12.0,
+            11.0,
+            3.0,
+            3.0,
+            "29383a"
+          ],
+          [
+            21.0,
+            11.0,
+            3.0,
+            3.0,
+            "29383a"
+          ],
+          [
+            16.0,
+            17.0,
+            4.0,
+            3.0,
+            "5a6d64"
+          ],
+          [
+            6.0,
+            0.0,
+            5.0,
+            9.0,
+            "777960"
+          ],
+          [
+            25.0,
+            0.0,
+            5.0,
+            9.0,
+            "777960"
+          ],
+          [
+            11.0,
+            21.0,
+            14.0,
+            3.0,
+            "657f73"
+          ]
+        ]
+      },
+      "yagwang": {
+        "parts": [],
+        "texture_path": "res://assets/visuals/yagwang-boss-v1.png",
+        "background_path": "res://assets/visuals/yagwang-winter-v1.png"
+      }
+    },
+    "icons": {
+      "bell": {
+        "parts": [
+          [
+            10.0,
+            3.0,
+            4.0,
+            3.0,
+            6.0
+          ],
+          [
+            8.0,
+            5.0,
+            8.0,
+            3.0,
+            4.0
+          ],
+          [
+            6.0,
+            8.0,
+            12.0,
+            10.0,
+            5.0
+          ],
+          [
+            8.0,
+            8.0,
+            4.0,
+            8.0,
+            6.0
+          ],
+          [
+            4.0,
+            17.0,
+            16.0,
+            3.0,
+            4.0
+          ],
+          [
+            6.0,
+            17.0,
+            12.0,
+            1.0,
+            6.0
+          ],
+          [
+            10.0,
+            20.0,
+            4.0,
+            2.0,
+            5.0
+          ],
+          [
+            11.0,
+            2.0,
+            2.0,
+            3.0,
+            7.0
+          ]
+        ],
+        "size": [
+          24.0,
+          24.0
+        ]
+      },
+      "coin": {
+        "parts": [
+          [
+            7.0,
+            3.0,
+            10.0,
+            18.0,
+            4.0
+          ],
+          [
+            3.0,
+            7.0,
+            18.0,
+            10.0,
+            4.0
+          ],
+          [
+            6.0,
+            5.0,
+            12.0,
+            14.0,
+            5.0
+          ],
+          [
+            5.0,
+            7.0,
+            14.0,
+            10.0,
+            5.0
+          ],
+          [
+            8.0,
+            5.0,
+            8.0,
+            2.0,
+            6.0
+          ],
+          [
+            5.0,
+            8.0,
+            2.0,
+            7.0,
+            6.0
+          ],
+          [
+            9.0,
+            9.0,
+            6.0,
+            6.0,
+            0.0
+          ],
+          [
+            10.0,
+            10.0,
+            4.0,
+            4.0,
+            1.0
+          ]
+        ],
+        "size": [
+          24.0,
+          24.0
+        ]
+      },
+      "hat": {
+        "parts": [
+          [
+            14.0,
+            9.0,
+            20.0,
+            22.0,
+            0.0
+          ],
+          [
+            16.0,
+            11.0,
+            16.0,
+            18.0,
+            1.0
+          ],
+          [
+            18.0,
+            12.0,
+            3.0,
+            16.0,
+            2.0
+          ],
+          [
+            7.0,
+            29.0,
+            34.0,
+            5.0,
+            0.0
+          ],
+          [
+            3.0,
+            34.0,
+            42.0,
+            5.0,
+            0.0
+          ],
+          [
+            7.0,
+            33.0,
+            34.0,
+            2.0,
+            1.0
+          ],
+          [
+            15.0,
+            39.0,
+            2.0,
+            6.0,
+            4.0
+          ],
+          [
+            31.0,
+            39.0,
+            2.0,
+            6.0,
+            4.0
+          ],
+          [
+            17.0,
+            43.0,
+            14.0,
+            2.0,
+            4.0
+          ]
+        ],
+        "size": [
+          48.0,
+          48.0
+        ]
+      },
+      "lantern": {
+        "parts": [
+          [
+            8.0,
+            3.0,
+            8.0,
+            2.0,
+            4.0
+          ],
+          [
+            7.0,
+            5.0,
+            2.0,
+            6.0,
+            5.0
+          ],
+          [
+            15.0,
+            5.0,
+            2.0,
+            6.0,
+            5.0
+          ],
+          [
+            5.0,
+            10.0,
+            14.0,
+            3.0,
+            0.0
+          ],
+          [
+            3.0,
+            13.0,
+            18.0,
+            24.0,
+            4.0
+          ],
+          [
+            5.0,
+            14.0,
+            14.0,
+            21.0,
+            5.0
+          ],
+          [
+            7.0,
+            16.0,
+            10.0,
+            17.0,
+            6.0
+          ],
+          [
+            10.0,
+            18.0,
+            5.0,
+            13.0,
+            3.0
+          ],
+          [
+            11.0,
+            16.0,
+            3.0,
+            12.0,
+            2.0
+          ],
+          [
+            3.0,
+            22.0,
+            18.0,
+            2.0,
+            4.0
+          ],
+          [
+            3.0,
+            31.0,
+            18.0,
+            2.0,
+            4.0
+          ],
+          [
+            5.0,
+            37.0,
+            14.0,
+            3.0,
+            0.0
+          ],
+          [
+            10.0,
+            40.0,
+            4.0,
+            5.0,
+            7.0
+          ],
+          [
+            8.0,
+            44.0,
+            8.0,
+            2.0,
+            7.0
+          ]
+        ],
+        "size": [
+          24.0,
+          48.0
+        ]
+      },
+      "mirror": {
+        "parts": [
+          [
+            6.0,
+            3.0,
+            18.0,
+            18.0,
+            4.0
+          ],
+          [
+            4.0,
+            6.0,
+            22.0,
+            12.0,
+            5.0
+          ],
+          [
+            8.0,
+            4.0,
+            14.0,
+            16.0,
+            5.0
+          ],
+          [
+            8.0,
+            6.0,
+            14.0,
+            12.0,
+            1.0
+          ],
+          [
+            10.0,
+            7.0,
+            10.0,
+            10.0,
+            2.0
+          ],
+          [
+            10.0,
+            7.0,
+            3.0,
+            7.0,
+            3.0
+          ],
+          [
+            13.0,
+            7.0,
+            6.0,
+            2.0,
+            3.0
+          ],
+          [
+            26.0,
+            10.0,
+            15.0,
+            5.0,
+            4.0
+          ],
+          [
+            28.0,
+            10.0,
+            13.0,
+            2.0,
+            6.0
+          ],
+          [
+            40.0,
+            9.0,
+            4.0,
+            7.0,
+            5.0
+          ]
+        ],
+        "size": [
+          48.0,
+          24.0
+        ]
+      },
+      "order": {
+        "parts": [
+          [
+            4.0,
+            3.0,
+            16.0,
+            42.0,
+            4.0
+          ],
+          [
+            6.0,
+            5.0,
+            12.0,
+            38.0,
+            6.0
+          ],
+          [
+            3.0,
+            2.0,
+            18.0,
+            4.0,
+            5.0
+          ],
+          [
+            3.0,
+            43.0,
+            18.0,
+            3.0,
+            5.0
+          ],
+          [
+            10.0,
+            9.0,
+            4.0,
+            3.0,
+            7.0
+          ],
+          [
+            8.0,
+            16.0,
+            8.0,
+            2.0,
+            0.0
+          ],
+          [
+            11.0,
+            14.0,
+            2.0,
+            13.0,
+            0.0
+          ],
+          [
+            8.0,
+            22.0,
+            8.0,
+            2.0,
+            0.0
+          ],
+          [
+            8.0,
+            30.0,
+            8.0,
+            8.0,
+            7.0
+          ],
+          [
+            10.0,
+            32.0,
+            4.0,
+            4.0,
+            6.0
+          ]
+        ],
+        "size": [
+          24.0,
+          48.0
+        ]
+      },
+      "ring": {
+        "parts": [
+          [
+            7.0,
+            4.0,
+            10.0,
+            3.0,
+            1.0
+          ],
+          [
+            4.0,
+            7.0,
+            3.0,
+            10.0,
+            1.0
+          ],
+          [
+            17.0,
+            7.0,
+            3.0,
+            10.0,
+            1.0
+          ],
+          [
+            7.0,
+            17.0,
+            10.0,
+            3.0,
+            1.0
+          ],
+          [
+            7.0,
+            6.0,
+            10.0,
+            3.0,
+            2.0
+          ],
+          [
+            6.0,
+            9.0,
+            3.0,
+            6.0,
+            2.0
+          ],
+          [
+            15.0,
+            9.0,
+            3.0,
+            6.0,
+            2.0
+          ],
+          [
+            9.0,
+            15.0,
+            6.0,
+            3.0,
+            2.0
+          ],
+          [
+            8.0,
+            6.0,
+            4.0,
+            2.0,
+            3.0
+          ]
+        ],
+        "size": [
+          24.0,
+          24.0
+        ]
+      },
+      "rope": {
+        "parts": [
+          [
+            7.0,
+            3.0,
+            10.0,
+            4.0,
+            4.0
+          ],
+          [
+            5.0,
+            7.0,
+            4.0,
+            27.0,
+            4.0
+          ],
+          [
+            15.0,
+            7.0,
+            4.0,
+            27.0,
+            4.0
+          ],
+          [
+            9.0,
+            31.0,
+            6.0,
+            7.0,
+            4.0
+          ],
+          [
+            11.0,
+            36.0,
+            30.0,
+            5.0,
+            4.0
+          ],
+          [
+            38.0,
+            32.0,
+            4.0,
+            9.0,
+            4.0
+          ],
+          [
+            7.0,
+            8.0,
+            2.0,
+            23.0,
+            6.0
+          ],
+          [
+            16.0,
+            8.0,
+            2.0,
+            23.0,
+            5.0
+          ],
+          [
+            9.0,
+            34.0,
+            7.0,
+            2.0,
+            6.0
+          ],
+          [
+            15.0,
+            37.0,
+            23.0,
+            2.0,
+            6.0
+          ],
+          [
+            39.0,
+            30.0,
+            3.0,
+            6.0,
+            5.0
+          ],
+          [
+            7.0,
+            13.0,
+            11.0,
+            2.0,
+            5.0
+          ],
+          [
+            7.0,
+            24.0,
+            11.0,
+            2.0,
+            5.0
+          ]
+        ],
+        "size": [
+          48.0,
+          48.0
+        ]
+      },
+      "sandals": {
+        "parts": [
+          [
+            5.0,
+            4.0,
+            14.0,
+            16.0,
+            4.0
+          ],
+          [
+            7.0,
+            3.0,
+            10.0,
+            18.0,
+            5.0
+          ],
+          [
+            7.0,
+            6.0,
+            10.0,
+            2.0,
+            6.0
+          ],
+          [
+            7.0,
+            11.0,
+            10.0,
+            2.0,
+            6.0
+          ],
+          [
+            10.0,
+            5.0,
+            3.0,
+            12.0,
+            4.0
+          ],
+          [
+            4.0,
+            28.0,
+            14.0,
+            16.0,
+            4.0
+          ],
+          [
+            6.0,
+            27.0,
+            10.0,
+            18.0,
+            5.0
+          ],
+          [
+            6.0,
+            30.0,
+            10.0,
+            2.0,
+            6.0
+          ],
+          [
+            6.0,
+            35.0,
+            10.0,
+            2.0,
+            6.0
+          ],
+          [
+            9.0,
+            29.0,
+            3.0,
+            12.0,
+            4.0
+          ],
+          [
+            13.0,
+            38.0,
+            3.0,
+            5.0,
+            6.0
+          ]
+        ],
+        "size": [
+          24.0,
+          48.0
+        ]
+      },
+      "seal": {
+        "parts": [
+          [
+            5.0,
+            2.0,
+            15.0,
+            21.0,
+            0.0
+          ],
+          [
+            4.0,
+            1.0,
+            15.0,
+            21.0,
+            6.0
+          ],
+          [
+            6.0,
+            3.0,
+            11.0,
+            17.0,
+            5.0
+          ],
+          [
+            8.0,
+            4.0,
+            7.0,
+            2.0,
+            7.0
+          ],
+          [
+            10.0,
+            4.0,
+            2.0,
+            13.0,
+            7.0
+          ],
+          [
+            7.0,
+            9.0,
+            9.0,
+            2.0,
+            7.0
+          ],
+          [
+            7.0,
+            13.0,
+            3.0,
+            5.0,
+            7.0
+          ],
+          [
+            13.0,
+            13.0,
+            3.0,
+            5.0,
+            7.0
+          ],
+          [
+            7.0,
+            19.0,
+            9.0,
+            1.0,
+            7.0
+          ]
+        ],
+        "size": [
+          24.0,
+          24.0
+        ]
+      },
+      "sword": {
+        "parts": [
+          [
+            10.0,
+            3.0,
+            4.0,
+            4.0,
+            3.0
+          ],
+          [
+            8.0,
+            7.0,
+            8.0,
+            45.0,
+            1.0
+          ],
+          [
+            9.0,
+            7.0,
+            3.0,
+            43.0,
+            3.0
+          ],
+          [
+            12.0,
+            8.0,
+            3.0,
+            43.0,
+            2.0
+          ],
+          [
+            5.0,
+            51.0,
+            14.0,
+            4.0,
+            4.0
+          ],
+          [
+            5.0,
+            51.0,
+            14.0,
+            2.0,
+            6.0
+          ],
+          [
+            10.0,
+            55.0,
+            4.0,
+            11.0,
+            7.0
+          ],
+          [
+            10.0,
+            57.0,
+            4.0,
+            2.0,
+            5.0
+          ],
+          [
+            10.0,
+            62.0,
+            4.0,
+            2.0,
+            5.0
+          ],
+          [
+            8.0,
+            66.0,
+            8.0,
+            3.0,
+            5.0
+          ]
+        ],
+        "size": [
+          24.0,
+          72.0
+        ]
+      },
+      "yakgwa": {
+        "parts": [
+          [
+            7.0,
+            3.0,
+            10.0,
+            18.0,
+            4.0
+          ],
+          [
+            3.0,
+            7.0,
+            18.0,
+            10.0,
+            4.0
+          ],
+          [
+            5.0,
+            5.0,
+            14.0,
+            14.0,
+            5.0
+          ],
+          [
+            8.0,
+            7.0,
+            8.0,
+            2.0,
+            6.0
+          ],
+          [
+            7.0,
+            10.0,
+            3.0,
+            5.0,
+            4.0
+          ],
+          [
+            14.0,
+            10.0,
+            3.0,
+            5.0,
+            4.0
+          ],
+          [
+            10.0,
+            15.0,
+            4.0,
+            2.0,
+            4.0
+          ],
+          [
+            10.0,
+            10.0,
+            4.0,
+            3.0,
+            8.0
+          ]
+        ],
+        "size": [
+          24.0,
+          24.0
+        ]
+      },
+      "sieve": {
+        "size": [
+          24,
+          24
+        ],
+        "palette": [
+          "101a24",
+          "815f42",
+          "d8bd82",
+          "48555a"
+        ],
+        "parts": [
+          [
+            2,
+            2,
+            20,
+            20,
+            0
+          ],
+          [
+            3,
+            3,
+            18,
+            18,
+            1
+          ],
+          [
+            5,
+            5,
+            14,
+            14,
+            2
+          ],
+          [
+            6,
+            6,
+            12,
+            12,
+            3
+          ],
+          [
+            7,
+            6,
+            1,
+            12,
+            2
+          ],
+          [
+            10,
+            6,
+            1,
+            12,
+            2
+          ],
+          [
+            13,
+            6,
+            1,
+            12,
+            2
+          ],
+          [
+            16,
+            6,
+            1,
+            12,
+            2
+          ],
+          [
+            6,
+            7,
+            12,
+            1,
+            2
+          ],
+          [
+            6,
+            10,
+            12,
+            1,
+            2
+          ],
+          [
+            6,
+            13,
+            12,
+            1,
+            2
+          ],
+          [
+            6,
+            16,
+            12,
+            1,
+            2
+          ]
+        ],
+        "texture_path": "res://assets/visuals/yagwang-sieve-v1.png"
+      }
+    },
+    "palette": [
+      "252b32",
+      "52645f",
+      "92b9a6",
+      "d8dec1",
+      "926641",
+      "d5aa62",
+      "f0d99b",
+      "9e5148",
+      "d37c65"
+    ]
+  },
+  "effects": [
+    {
+      "affects": "",
+      "amount": 6,
+      "condition_tags": "",
+      "id": "sword_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "damage",
+      "amount": 2,
+      "condition_tags": "",
+      "id": "seal_bonus",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "modify_power",
+      "priority": 0,
+      "required_tags": "weapon",
+      "scale": "flat",
+      "stack_group": "seal_bonus",
+      "target": "adjacent_items",
+      "trigger": "modify"
+    },
+    {
+      "affects": "",
+      "amount": 4,
+      "condition_tags": "keepsake",
+      "id": "lantern_guard",
+      "max_matches": 2,
+      "max_per_action": 1,
+      "operation": "guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "per_adjacent",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "turn_end"
+    },
+    {
+      "affects": "",
+      "amount": 5,
+      "condition_tags": "",
+      "id": "hat_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 3,
+      "condition_tags": "",
+      "id": "bell_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 7,
+      "condition_tags": "",
+      "id": "yakgwa_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "heal",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 4,
+      "condition_tags": "",
+      "id": "rope_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 3,
+      "condition_tags": "",
+      "id": "sandals_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 10,
+      "condition_tags": "",
+      "id": "order_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 1,
+      "condition_tags": "",
+      "id": "coin_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 4,
+      "condition_tags": "",
+      "id": "mirror_use",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "guard",
+      "amount": 2,
+      "condition_tags": "lantern",
+      "id": "mirror_bonus",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "modify_power",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "per_adjacent",
+      "stack_group": "mirror_bonus",
+      "target": "self",
+      "trigger": "modify"
+    },
+    {
+      "affects": "",
+      "amount": 5,
+      "condition_tags": "",
+      "id": "encounter_1_intent_1",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 7,
+      "condition_tags": "",
+      "id": "encounter_1_intent_2",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 6,
+      "condition_tags": "",
+      "id": "encounter_2_intent_1",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "set_guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 9,
+      "condition_tags": "",
+      "id": "encounter_2_intent_2",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 6,
+      "condition_tags": "",
+      "id": "encounter_3_intent_1",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 10,
+      "condition_tags": "",
+      "id": "encounter_3_intent_2",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "use"
+    },
+    {
+      "affects": "",
+      "amount": 8,
+      "condition_tags": "",
+      "id": "encounter_3_intent_3",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "set_guard",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "self",
+      "trigger": "use"
+    },
+    {
+      "affects": "damage",
+      "amount": 2,
+      "condition_tags": "",
+      "id": "jade_diagonal_factor",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "multiply_power",
+      "priority": 0,
+      "required_tags": "weapon",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "diagonal_items",
+      "trigger": "modify"
+    },
+    {
+      "affects": "",
+      "amount": 2,
+      "condition_tags": "",
+      "id": "arang_pain_reaction",
+      "max_matches": 1,
+      "max_per_action": 1,
+      "operation": "damage",
+      "priority": 0,
+      "required_tags": "",
+      "scale": "flat",
+      "stack_group": "",
+      "target": "opponent",
+      "trigger": "damage_taken"
+    }
+  ],
+  "encounters": [
+    {
+      "id": "winter_boss",
+      "order": 0,
+      "name": "One-Eyed Yagwanggwi",
+      "hp": 45,
+      "intent_ids": "encounter_1_intent_1",
+      "reaction_ids": "",
+      "visual_id": "yagwang"
+    }
+  ],
+  "events": [],
+  "hazards": [],
+  "items": [
+    {
+      "consumable": false,
+      "cost": 1,
+      "description": "An old sword whose power changes with nearby items.",
+      "display_name": "Sain Sword",
+      "effect_ids": "sword_use",
+      "footprint": "0:0|0:1|0:2",
+      "icon_id": "sword",
+      "id": "sword",
+      "tags": "weapon",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 0,
+      "description": "Strengthens weapons directly adjacent to it.",
+      "display_name": "Sealing Talisman",
+      "effect_ids": "seal_bonus",
+      "footprint": "0:0",
+      "icon_id": "seal",
+      "id": "seal",
+      "tags": "talisman",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 0,
+      "description": "Lights the way for the belongings of the dead.",
+      "display_name": "Soul Lantern",
+      "effect_ids": "lantern_guard",
+      "footprint": "0:0|0:1",
+      "icon_id": "lantern",
+      "id": "lantern",
+      "tags": "lantern",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 0,
+      "description": "Doubles the attack power of weapons diagonally adjacent.",
+      "display_name": "Jade Ring",
+      "effect_ids": "jade_diagonal_factor",
+      "footprint": "0:0",
+      "icon_id": "ring",
+      "id": "ring",
+      "tags": "keepsake",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 1,
+      "description": "Blocks damage until the next enemy action. Its wide brim takes up space.",
+      "display_name": "Worn Gat",
+      "effect_ids": "hat_use",
+      "footprint": "0:0|1:0|0:1|1:1",
+      "icon_id": "hat",
+      "id": "hat",
+      "tags": "",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 1,
+      "description": "A compact extra attack. It has no weapon tag and cannot receive talisman bonuses.",
+      "display_name": "Guide Bell",
+      "effect_ids": "bell_use",
+      "footprint": "0:0",
+      "icon_id": "bell",
+      "id": "bell",
+      "tags": "",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": true,
+      "cost": 0,
+      "description": "A one-use honey pastry. Once eaten, its space is freed permanently.",
+      "display_name": "Small Yakgwa",
+      "effect_ids": "yakgwa_use",
+      "footprint": "0:0",
+      "icon_id": "yakgwa",
+      "id": "yakgwa",
+      "tags": "",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 1,
+      "description": "A bent weapon. Rotate it to fit gaps and use adjacency bonuses.",
+      "display_name": "Binding Rope",
+      "effect_ids": "rope_use",
+      "footprint": "0:0|0:1|1:1",
+      "icon_id": "rope",
+      "id": "rope",
+      "tags": "weapon",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 1,
+      "description": "A compact defense tool that leaves more room for other items.",
+      "display_name": "Straw Shoes",
+      "effect_ids": "sandals_use",
+      "footprint": "0:0|0:1",
+      "icon_id": "sandals",
+      "id": "sandals",
+      "tags": "footwear",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 2,
+      "description": "A delivery order with a powerful attack that requires careful energy management.",
+      "display_name": "Reaper Writ",
+      "effect_ids": "order_use",
+      "footprint": "0:0|0:1",
+      "icon_id": "order",
+      "id": "order",
+      "tags": "",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 0,
+      "description": "A keepsake that gives a little defense without spending energy.",
+      "display_name": "Forgotten Coin",
+      "effect_ids": "coin_use",
+      "footprint": "0:0",
+      "icon_id": "coin",
+      "id": "coin",
+      "tags": "keepsake",
+      "uses_per_turn": 1
+    },
+    {
+      "consumable": false,
+      "cost": 1,
+      "description": "A mirror found in the bamboo grove, holding someone's last memories.",
+      "display_name": "Bloodstained Mirror",
+      "effect_ids": "mirror_use|mirror_bonus",
+      "footprint": "0:0|1:0",
+      "icon_id": "mirror",
+      "id": "mirror",
+      "tags": "",
+      "uses_per_turn": 1
+    },
+    {
+      "id": "sieve",
+      "display_name": "Mother's Oak Sieve",
+      "description": "Once per battle, spend 1 energy to delay the next enemy action and search.",
+      "footprint": "0:0|1:0|0:1|1:1",
+      "tags": "distraction",
+      "cost": 1,
+      "uses_per_turn": 1,
+      "consumable": false,
+      "icon_id": "sieve",
+      "effect_ids": ""
+    }
+  ],
+  "loadout": [
+    {
+      "id": "sword",
+      "item_id": "sword",
+      "x": 3,
+      "y": 0,
+      "rotation": 0
+    },
+    {
+      "id": "seal",
+      "item_id": "seal",
+      "x": 2,
+      "y": 0,
+      "rotation": 0
+    },
+    {
+      "id": "hat",
+      "item_id": "hat",
+      "x": 0,
+      "y": 0,
+      "rotation": 0
+    },
+    {
+      "id": "bell",
+      "item_id": "bell",
+      "x": 4,
+      "y": 0,
+      "rotation": 0
+    },
+    {
+      "id": "sandals",
+      "item_id": "sandals",
+      "x": 4,
+      "y": 2,
+      "rotation": 0
+    },
+    {
+      "id": "sieve",
+      "item_id": "sieve",
+      "x": -1,
+      "y": -1,
+      "rotation": 0
+    },
+    {
+      "id": "lantern",
+      "item_id": "lantern",
+      "x": 2,
+      "y": 2,
+      "rotation": 0
+    },
+    {
+      "id": "ring",
+      "item_id": "ring",
+      "x": 0,
+      "y": 2,
+      "rotation": 0
+    }
+  ],
+  "resolutions": [],
+  "rewards": [],
+  "routes": [],
+  "rules": [
+    {
+      "energy_per_turn": 3,
+      "grid_height": 4,
+      "grid_width": 5,
+      "id": "first_delivery",
+      "max_health": 28,
+      "player_visual": "reaper",
+      "victory_heal": 0
+    }
+  ],
+  "schema_version": 4.0,
+  "tags": [
+    {
+      "id": "weapon",
+      "label": "Weapon"
+    },
+    {
+      "id": "keepsake",
+      "label": "Keepsake"
+    },
+    {
+      "id": "lantern",
+      "label": "Lantern"
+    },
+    {
+      "id": "talisman",
+      "label": "Talisman"
+    },
+    {
+      "id": "footwear",
+      "label": "Footwear"
+    },
+    {
+      "id": "distraction",
+      "label": "Distraction"
+    }
+  ]
+}

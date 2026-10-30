@@ -1610,6 +1610,36 @@
 			"stack_group": "",
 			"target": "self",
 			"trigger": "use"
+		},
+		{
+			"affects": "damage",
+			"amount": 2,
+			"condition_tags": "",
+			"id": "jade_diagonal_factor",
+			"max_matches": 1,
+			"max_per_action": 1,
+			"operation": "multiply_power",
+			"priority": 0,
+			"required_tags": "weapon",
+			"scale": "flat",
+			"stack_group": "",
+			"target": "diagonal_items",
+			"trigger": "modify"
+		},
+		{
+			"affects": "",
+			"amount": 2,
+			"condition_tags": "",
+			"id": "arang_pain_reaction",
+			"max_matches": 1,
+			"max_per_action": 1,
+			"operation": "damage",
+			"priority": 0,
+			"required_tags": "",
+			"scale": "flat",
+			"stack_group": "",
+			"target": "opponent",
+			"trigger": "damage_taken"
 		}
 	],
 	"encounters": [
@@ -1617,50 +1647,61 @@
 			"hp": 18,
 			"id": "gate_1",
 			"intent_ids": "encounter_1_intent_1|encounter_1_intent_2",
-			"name": "두려움에 사로잡힌 포졸",
+			"name": "Terrified Guard",
 			"order": 0,
 			"reaction_ids": "",
 			"visual_id": "spirit_1"
 		},
 		{
-			"hp": 24,
+			"hp": 30,
 			"id": "gate_2",
 			"intent_ids": "encounter_2_intent_1|encounter_2_intent_2",
-			"name": "원혼 아랑",
+			"name": "Arang, Restless Spirit",
 			"order": 1,
 			"reaction_ids": "",
 			"visual_id": "spirit_2"
 		},
 		{
-			"hp": 30,
+			"hp": 24,
 			"id": "gate_3",
 			"intent_ids": "encounter_3_intent_1|encounter_3_intent_2|encounter_3_intent_3",
-			"name": "원혼 아랑",
+			"name": "Arang, Restless Spirit",
 			"order": 2,
-			"reaction_ids": "",
+			"reaction_ids": "arang_pain_reaction",
 			"visual_id": "spirit_3"
 		}
 	],
 	"events": [
 		{
-			"description": "대숲에서 핏자국이 남은 동경을 찾았다. 진실을 기억할 물건을 챙길까?",
+			"description": "A bloodstained mirror lies in the bamboo grove. Will you keep it as evidence?",
 			"heal_amount": 0,
 			"id": "lost_keepsake",
 			"item_id": "mirror",
-			"leave_label": "그 자리에 둔다",
-			"leave_result": "아랑의 원한을 힘으로 가라앉혔다. 그녀의 사연은 여전히 어둠 속에 남아 있다.",
+			"leave_label": "Leave it",
+			"leave_result": "You subdued Arang by force. Her story remains untold.",
 			"step": 0,
-			"take_label": "동경을 챙긴다",
-			"take_result": "아랑의 원한을 힘으로 가라앉혔다. 동경은 남았지만, 그녀가 전하려던 말은 끝내 듣지 못했다.",
-			"title": "대숲의 증거"
+			"take_label": "Take the mirror",
+			"take_result": "You subdued Arang by force. The mirror remains, but her story was left untold.",
+			"title": "Evidence in the Grove"
+		}
+	],
+	"hazards": [
+		{
+			"cells": "0:0|1:0|2:0|3:0|4:0",
+			"cost_increase": 1,
+			"description": "Cold has settled on the bag. Rotate or move a weapon to avoid it.",
+			"id": "edge_frost",
+			"label": "Spirit's Chill",
+			"required_tags": "weapon",
+			"step": 1
 		}
 	],
 	"items": [
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "상하좌우의 물건에 따라 위력이 달라지는 오래된 검.",
-			"display_name": "낡은 사인검",
+			"description": "An old sword whose power changes with nearby items.",
+			"display_name": "Sain Sword",
 			"effect_ids": "sword_use",
 			"footprint": "0:0|0:1|0:2",
 			"icon_id": "sword",
@@ -1671,8 +1712,8 @@
 		{
 			"consumable": false,
 			"cost": 0,
-			"description": "인접한 무기를 강화합니다. 대각선은 인접하지 않습니다.",
-			"display_name": "봉인부",
+			"description": "Strengthens weapons directly adjacent to it.",
+			"display_name": "Sealing Talisman",
 			"effect_ids": "seal_bonus",
 			"footprint": "0:0",
 			"icon_id": "seal",
@@ -1683,8 +1724,8 @@
 		{
 			"consumable": false,
 			"cost": 0,
-			"description": "망자의 물건이 어두운 길을 비춥니다.",
-			"display_name": "혼백등",
+			"description": "Lights the way for the belongings of the dead.",
+			"display_name": "Soul Lantern",
 			"effect_ids": "lantern_guard",
 			"footprint": "0:0|0:1",
 			"icon_id": "lantern",
@@ -1695,9 +1736,9 @@
 		{
 			"consumable": false,
 			"cost": 0,
-			"description": "돌려주지 못한 마지막 약속을 담은 유품.",
-			"display_name": "옥가락지",
-			"effect_ids": "",
+			"description": "Doubles the attack power of weapons diagonally adjacent.",
+			"display_name": "Jade Ring",
+			"effect_ids": "jade_diagonal_factor",
 			"footprint": "0:0",
 			"icon_id": "ring",
 			"id": "ring",
@@ -1707,8 +1748,8 @@
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "다음 적 행동까지 피해를 막습니다. 넓은 챙만큼 보따리 자리도 많이 필요합니다.",
-			"display_name": "낡은 갓",
+			"description": "Blocks damage until the next enemy action. Its wide brim takes up space.",
+			"display_name": "Worn Gat",
 			"effect_ids": "hat_use",
 			"footprint": "0:0|1:0|0:1|1:1",
 			"icon_id": "hat",
@@ -1719,8 +1760,8 @@
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "작은 공간으로 추가 공격을 확보합니다. 무기 태그가 없어 봉인부 강화는 받지 않습니다.",
-			"display_name": "길잡이 방울",
+			"description": "A compact extra attack. It has no weapon tag and cannot receive talisman bonuses.",
+			"display_name": "Guide Bell",
 			"effect_ids": "bell_use",
 			"footprint": "0:0",
 			"icon_id": "bell",
@@ -1731,8 +1772,8 @@
 		{
 			"consumable": true,
 			"cost": 0,
-			"description": "한 번 먹으면 사라져 공간이 비어납니다. 배치를 되돌려도 되살릴 수 없습니다.",
-			"display_name": "작은 약과",
+			"description": "A one-use honey pastry. Once eaten, its space is freed permanently.",
+			"display_name": "Small Yakgwa",
 			"effect_ids": "yakgwa_use",
 			"footprint": "0:0",
 			"icon_id": "yakgwa",
@@ -1743,8 +1784,8 @@
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "꺾인 형태의 무기. 회전해 틈에 넣고 인접 보너스를 활용하세요.",
-			"display_name": "오라",
+			"description": "A bent weapon. Rotate it to fit gaps and use adjacency bonuses.",
+			"display_name": "Binding Rope",
 			"effect_ids": "rope_use",
 			"footprint": "0:0|0:1|1:1",
 			"icon_id": "rope",
@@ -1755,8 +1796,8 @@
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "갓보다 작은 방어 도구. 남은 공간으로 다른 물건을 챙길 수 있습니다.",
-			"display_name": "짚신",
+			"description": "A compact defense tool that leaves more room for other items.",
+			"display_name": "Straw Shoes",
 			"effect_ids": "sandals_use",
 			"footprint": "0:0|0:1",
 			"icon_id": "sandals",
@@ -1767,8 +1808,8 @@
 		{
 			"consumable": false,
 			"cost": 2,
-			"description": "인도 명령을 담은 문서. 큰 힘을 쓰는 만큼 기력을 아껴야 합니다. 능력은 게임용 창작입니다.",
-			"display_name": "적패지",
+			"description": "A delivery order with a powerful attack that requires careful energy management.",
+			"display_name": "Reaper Writ",
 			"effect_ids": "order_use",
 			"footprint": "0:0|0:1",
 			"icon_id": "order",
@@ -1779,8 +1820,8 @@
 		{
 			"consumable": false,
 			"cost": 0,
-			"description": "기력을 쓰지 않고 작은 방어를 얻는 유품.",
-			"display_name": "남겨진 엽전",
+			"description": "A keepsake that gives a little defense without spending energy.",
+			"display_name": "Forgotten Coin",
 			"effect_ids": "coin_use",
 			"footprint": "0:0",
 			"icon_id": "coin",
@@ -1791,8 +1832,8 @@
 		{
 			"consumable": false,
 			"cost": 1,
-			"description": "대숲에서 찾은 동경. 누군가의 마지막 기억이 남아 있다.",
-			"display_name": "핏자국이 남은 동경",
+			"description": "A mirror found in the bamboo grove, holding someone's last memories.",
+			"display_name": "Bloodstained Mirror",
 			"effect_ids": "mirror_use|mirror_bonus",
 			"footprint": "0:0|1:0",
 			"icon_id": "mirror",
@@ -1855,20 +1896,20 @@
 	"resolutions": [
 		{
 			"allow_stash": true,
-			"button": "동경을 보여 주고 듣는다",
-			"completion_title": "아랑의 밤 · 첫 인도 완료",
+			"button": "Show the mirror and listen",
+			"completion_title": "Arang's Night · First Delivery Complete",
 			"event_id": "lost_keepsake",
 			"id": "evidence_resolution",
-			"message": "동경을 보여 주자 아랑이 말을 잇는다.",
-			"result": "아랑은 동경을 알아보고 자신의 억울함을 직접 이야기한다. 차사는 그 말을 명부에 적고, 진실을 전하겠다고 약속한다. 아랑은 고개를 끄덕이며 스스로 길을 나선다.",
-			"unavailable": "증거를 보따리에 넣으면 아랑의 이야기를 들을 수 있습니다."
+			"message": "Arang recognizes the mirror and begins to speak.",
+			"result": "Arang recognizes the mirror and tells you what happened. You record her words and promise to reveal the truth. She nods and sets out on her own.",
+			"unavailable": "Place the evidence in your bag to hear Arang's story."
 		}
 	],
 	"rewards": [
 		{
 			"encounter_id": "gate_1",
 			"id": "first_crossing",
-			"item_ids": "rope|sandals|mirror"
+			"item_ids": "rope|sandals|order"
 		},
 		{
 			"encounter_id": "gate_2",
@@ -1878,17 +1919,17 @@
 	],
 	"routes": [
 		{
-			"description": "대숲에서 아랑을 만납니다. 첫 행동은 방어이며 체력이 낮습니다.",
+			"description": "Meet Arang in the grove. Her first move is defense.",
 			"encounter_ids": "gate_1|gate_2|gate_3",
 			"id": "mist_path",
-			"name": "대숲을 따라간다",
+			"name": "Follow the Bamboo Grove",
 			"reward_ids": "first_crossing|second_crossing"
 		},
 		{
-			"description": "연못을 지나 아랑을 만납니다. 첫 행동은 공격이며 체력이 높습니다.",
+			"description": "Meet Arang by the pond. Her first move is an attack.",
 			"encounter_ids": "gate_1|gate_3|gate_2",
 			"id": "moon_path",
-			"name": "연못을 지나간다",
+			"name": "Pass the Moonlit Pond",
 			"reward_ids": "first_crossing|second_crossing"
 		}
 	],
@@ -1907,19 +1948,19 @@
 	"tags": [
 		{
 			"id": "weapon",
-			"label": "무기"
+			"label": "Weapon"
 		},
 		{
 			"id": "keepsake",
-			"label": "유품"
+			"label": "Keepsake"
 		},
 		{
 			"id": "lantern",
-			"label": "등"
+			"label": "Lantern"
 		},
 		{
 			"id": "talisman",
-			"label": "talisman"
+			"label": "Talisman"
 		}
 	]
 }

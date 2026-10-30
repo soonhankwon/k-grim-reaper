@@ -117,7 +117,7 @@ func _test_ui() -> void:
 		release.position = motion.position
 		main.board._input(release)
 		check(main.inventory.is_packed(TEST_ID) and main.inventory.items[TEST_ID].origin == Vector2i(3,0), "stash drag places the long weapon at the released grid cell")
-		check(main.labels.power.text.contains("공격 13"), "item detail shows the actual test damage")
+		check(main.labels.power.text.contains("Attack 13"), "item detail shows the actual test damage")
 	for window_size in [Vector2i(1024,576), Vector2i(1280,720), Vector2i(1920,1080)]:
 		root.size = window_size
 		await process_frame

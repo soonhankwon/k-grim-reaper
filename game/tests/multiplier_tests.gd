@@ -27,7 +27,7 @@ func _run() -> void:
 	var plan: Dictionary = result.effects[0]
 	check(plan.base == 6 and plan.bonuses.size() == 1 and plan.multipliers.size() == 1, "plan preserves calculation components")
 	var text := " ".join(EffectText.lines(model.combat_snapshot().sword, model.combat_snapshot(), "sword"))
-	check("(6 + 2) × 2" in text and "공격 16" in text, "item description shows final number and formula")
+	check("Attack 16" in text and not text.contains("Calculation:"), "item description shows final power without a raw formula")
 	check(model.preview("seal", Vector2i(1,0), 0).attacks.sword == 12, "preview moving addition recalculates before multiplication")
 	check(model.preview("ring", Vector2i(0,0), 0).attacks.sword == 8, "preview moving multiplier removes it")
 	await _test_combat(raw)
@@ -152,7 +152,7 @@ func _test_limits(raw: Dictionary) -> void:
 	check(valid.error.is_empty(), "large multipliers are valid authored data")
 	var model := ItemCatalog.from_validated(valid.raw)
 	var preview := model.action_result("sword")
-	check(not preview.error.is_empty() and "한도" in " ".join(EffectText.lines(model.combat_snapshot().sword, model.combat_snapshot(), "sword")), "overflow is shown as an error, not a number")
+	check(not preview.error.is_empty() and "limit" in " ".join(EffectText.lines(model.combat_snapshot().sword, model.combat_snapshot(), "sword")), "overflow is shown as an error, not a number")
 	check(not InventoryRules.totals(model.combat_snapshot(), "use", "enemy").error.is_empty(), "aggregate preview propagates overflow")
 	var boundary_items := ItemCatalog.from_validated(raw).combat_snapshot()
 	boundary_items.sword.effects[0].amount = 3002399751580330
@@ -236,7 +236,7 @@ func _test_csv() -> void:
 	var dir := ProjectSettings.globalize_path("res://../build/multiplier-csv-%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(dir)
 	var source := ProjectSettings.globalize_path("res://../content/source")
-	for name in ["items.csv", "tags.csv", "loadout.csv", "encounters.csv", "rules.csv", "rewards.csv", "routes.csv", "events.csv", "resolutions.csv", "art.json", "effects.csv"]:
+	for name in ["items.csv", "tags.csv", "loadout.csv", "encounters.csv", "rules.csv", "rewards.csv", "routes.csv", "events.csv", "resolutions.csv", "hazards.csv", "art.json", "effects.csv"]:
 		check(DirAccess.copy_absolute(source.path_join(name), dir.path_join(name)) == OK, "copy isolated CSV " + name)
 	var effect_file := FileAccess.open(dir.path_join("effects.csv"), FileAccess.READ_WRITE)
 	effect_file.seek_end()
@@ -270,7 +270,7 @@ func _test_ui() -> void:
 	await process_frame
 	check(not main.save_enabled and main.session.save_service == null, "experiment cannot read or write player saves")
 	main._select("sword")
-	check(main.labels.power.text.contains("(6 + 2) × 2") and main.labels.sources.text.contains("×2"), "visible item details explain the combination")
+	check(not main.labels.power.text.contains("Calculation:") and main.layout.synergy_breakdown.rows.any(func(row): return row.base == 6 and row.amount == 16 and row.bonuses.any(func(bonus): return bonus.amount == 2) and row.multipliers.any(func(mult): return mult.factor == 2)), "visible icon breakdown explains the combination")
 	main._select("ring")
 	main._preview(Vector2i(0,0))
 	check(main.labels.notice.text.contains("16 → 8"), "placement preview shows multiplier loss")

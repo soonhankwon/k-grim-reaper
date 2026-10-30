@@ -1,2 +1,2 @@
 id,step,title,description,item_id,take_label,leave_label,take_result,leave_result,heal_amount
-lost_keepsake,0,대숲의 증거,대숲에서 핏자국이 남은 동경을 찾았다. 진실을 기억할 물건을 챙길까?,mirror,동경을 챙긴다,그 자리에 둔다,"아랑의 원한을 힘으로 가라앉혔다. 동경은 남았지만, 그녀가 전하려던 말은 끝내 듣지 못했다.",아랑의 원한을 힘으로 가라앉혔다. 그녀의 사연은 여전히 어둠 속에 남아 있다.,0
+lost_keepsake,0,Evidence in the Grove,A bloodstained mirror lies in the bamboo grove. Will you keep it as evidence?,mirror,Take the mirror,Leave it,"You subdued Arang by force. The mirror remains, but her story was left untold.",You subdued Arang by force. Her story remains untold.,0

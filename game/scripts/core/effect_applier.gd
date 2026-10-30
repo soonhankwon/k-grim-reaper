@@ -6,7 +6,7 @@ const MAX_ACTIVE_ITEMS := 64
 const MAX_ACTIVE_UNITS := 256
 # Largest exact integer preserved by JSON save/load, not a balance cap.
 const MAX_EXACT := 9007199254740991
-const POWER_ERROR := "효과 수치가 정확하게 처리할 수 있는 한도를 초과했습니다."
+const POWER_ERROR := "Effect value exceeds the safe calculation limit."
 
 static func within_budget(items: Dictionary) -> bool:
 	if items.size() > MAX_ACTIVE_ITEMS: return false
@@ -96,7 +96,7 @@ static func plan(items: Dictionary, uid: String, trigger: String) -> Array[Dicti
 			if not key.is_empty() and seen.has(key): continue
 			var factor := int(modifier.amount)
 			if factor < 1:
-				error = "배율은 1 이상의 정수여야 합니다."
+				error = "Multiplier must be an integer of at least 1."
 				amount = 0
 				break
 			if not key.is_empty(): seen[key] = true
@@ -137,17 +137,17 @@ static func evaluate(state: Dictionary, effect: Dictionary) -> Dictionary:
 			changes[guard_key] = int(state[guard_key]) - absorbed
 			changes[hp_key] = int(state[hp_key]) - damage
 			details = {"absorbed": absorbed, "health_damage": damage}
-			message = "%s: 피해 %d (방어 %d)" % [effect.label, damage, absorbed]
+			message = "%s: %d damage (%d blocked)" % [effect.label, damage, absorbed]
 		"guard":
 			if amount > MAX_EXACT - int(state[guard_key]): return {"error": POWER_ERROR}
 			changes[guard_key] = int(state[guard_key]) + amount
-			message = "%s: 방어 +%d" % [effect.label, amount]
+			message = "%s: Block +%d" % [effect.label, amount]
 		"set_guard":
 			changes[guard_key] = amount
-			message = "%s: 방어 %d" % [effect.label, amount]
+			message = "%s: Block %d" % [effect.label, amount]
 		"heal":
 			var recovered := mini(amount, maxi(0, maximum - int(state[hp_key])))
 			changes[hp_key] = int(state[hp_key]) + recovered
-			message = "%s: 체력 +%d" % [effect.label, recovered]
-		_: return {"error": "지원하지 않는 효과 연산입니다."}
+			message = "%s: HP +%d" % [effect.label, recovered]
+		_: return {"error": "Unsupported effect operation."}
 	return {"changes": changes, "details": details, "damage": damage, "message": message}

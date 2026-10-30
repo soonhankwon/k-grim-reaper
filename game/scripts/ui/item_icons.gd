@@ -13,11 +13,14 @@ static func draw_icon(canvas: CanvasItem, item: ItemData, origin: Vector2, pixel
 	var turn := posmod(rotation, 4)
 	var offset: Vector2 = [Vector2.ZERO, Vector2(bounds.y, 0), bounds, Vector2(0, bounds.x)][turn]
 	canvas.draw_set_transform(origin + offset * pixel_scale, turn * PI / 2, Vector2.ONE * pixel_scale)
-	var sprite := PresentationArt.item_region(str(item.icon.get("presentation_id", "")))
+	var custom := PresentationArt.visual_texture(str(item.icon.get("texture_path", "")))
+	var texture := custom if custom != null else PresentationArt.ITEMS
+	var sprite := Rect2(Vector2.ZERO, texture.get_size()) if custom != null else PresentationArt.item_region(str(item.icon.get("presentation_id", "")))
 	if sprite.has_area():
-		var sprite_fit := minf(bounds.x / sprite.size.x, bounds.y / sprite.size.y) * 0.9
+		# A 32px authored icon occupies exactly 32 of the board's 38 logical pixels.
+		var sprite_fit := minf(bounds.x / sprite.size.x, bounds.y / sprite.size.y) * (32.0 / 38.0)
 		var sprite_size := sprite.size * sprite_fit
-		canvas.draw_texture_rect_region(PresentationArt.ITEMS, Rect2((bounds - sprite_size) / 2, sprite_size), sprite, Color(0.45, 0.45, 0.45) if faded else Color.WHITE)
+		canvas.draw_texture_rect_region(texture, Rect2((bounds - sprite_size) / 2, sprite_size), sprite, Color(0.45, 0.45, 0.45) if faded else Color.WHITE)
 		canvas.draw_set_transform(Vector2.ZERO)
 		return
 	var native := Vector2(item.icon["size"][0], item.icon["size"][1])

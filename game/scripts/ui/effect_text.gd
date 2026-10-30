@@ -3,7 +3,19 @@ extends RefCounted
 ## Generic vocabulary for effects. Content copy never owns computed numbers.
 
 static func operation(kind: String) -> String:
-	return {"damage": "공격", "guard": "방어", "heal": "회복", "set_guard": "방어 설정", "modify_power": "위력 보너스", "multiply_power": "위력 배율"}.get(kind, kind)
+	return {"damage": "Attack", "guard": "Block", "heal": "Heal", "set_guard": "Set Block", "modify_power": "Power Bonus", "multiply_power": "Power Multiplier"}.get(kind, kind)
+
+static func intent(unit: Dictionary) -> String:
+	var target := " (you)" if unit.get("target", "") != "self" else (" (self)" if unit.get("operation", "") == "damage" else "")
+	return "%s %d%s" % [operation(str(unit.operation)), int(unit.amount), target]
+
+static func enemy_reactions(units: Array) -> PackedStringArray:
+	var lines: PackedStringArray = []
+	for unit: Dictionary in units:
+		var target := "self" if unit.target == "self" else "you"
+		var lethal := "lethal: no" if unit.target == "self" else "lethal: yes"
+		lines.append("HP hit → %s %d (%s)\n%d/action · %s" % [operation(unit.operation), unit.amount, target, unit.max_per_action, lethal])
+	return lines
 
 static func _tags(tags: Array, labels: Dictionary) -> String:
 	var names: PackedStringArray = []
@@ -17,24 +29,18 @@ static func lines(item: Dictionary, items: Dictionary, uid: String, tags: Dictio
 			if not plan.error.is_empty():
 				result.append(plan.error)
 				continue
-			var timing: String = {"use": "사용", "turn_end": "턴 종료", "damage_taken": "피해 반응"}[trigger]
-			var recipient := "자신" if plan.target == "player" else "적"
-			var text := "%s: %s %s %d" % [timing, recipient, operation(plan.kind), plan.amount]
-			if not plan.multipliers.is_empty():
-				var formula := str(plan.base)
-				for bonus: Dictionary in plan.bonuses: formula += " + %d" % bonus.amount
-				formula = "(" + formula + ")"
-				for multiplier: Dictionary in plan.multipliers: formula += " × %d" % multiplier.factor
-				text += "\n계산: " + formula
+			var timing: String = {"use": "Use", "turn_end": "End Turn", "damage_taken": "On damage"}[trigger]
+			var recipient := "Self" if plan.target == "player" else "Enemy"
+			var text := "%s: %s %d → %s" % [timing, operation(plan.kind), plan.amount, recipient]
 			result.append(text)
 	for unit: Dictionary in item.effects:
 		if unit.trigger == "modify":
-			var recipient: String = {"adjacent_items":"상하좌우 물건", "diagonal_items":"대각선 물건", "neighbor_items":"상하좌우·대각선 물건"}.get(unit.target, "이 물건")
+			var recipient: String = {"adjacent_items":"Adjacent items", "diagonal_items":"Diagonal items", "neighbor_items":"Adjacent + diagonal items"}.get(unit.target, "This item")
 			var filter := " [%s]" % _tags(unit.required_tags, tags) if not unit.required_tags.is_empty() else ""
 			var amount_text := "×%d" % unit.amount if unit.operation == "multiply_power" else "+%d" % unit.amount
 			result.append("%s%s %s %s" % [recipient, filter, operation(unit.affects), amount_text])
 		if unit.scale in ["per_adjacent", "per_diagonal", "per_neighbor"]:
-			var range_name: String = {"per_adjacent":"상하좌우", "per_diagonal":"대각선", "per_neighbor":"상하좌우·대각선"}[unit.scale]
-			var condition := _tags(unit.condition_tags, tags) if not unit.condition_tags.is_empty() else "모든 물건"
-			result.append("%s [%s] ×%d · 최대 %d개" % [range_name, condition, unit.amount, unit.max_matches])
+			var range_name: String = {"per_adjacent":"Adjacent", "per_diagonal":"Diagonal", "per_neighbor":"Adjacent + diagonal"}[unit.scale]
+			var condition := _tags(unit.condition_tags, tags) if not unit.condition_tags.is_empty() else "All items"
+			result.append("%s [%s] ×%d · max %d" % [range_name, condition, unit.amount, unit.max_matches])
 	return result

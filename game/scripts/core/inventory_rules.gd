@@ -5,6 +5,26 @@ extends RefCounted
 static func adjacent(first: Dictionary, second: Dictionary) -> bool:
 	return GridRules.adjacent(first, second)
 
+static func active_hazards(state: Dictionary) -> Array:
+	if state.get("phase", "") not in ["packing", "battle"]: return []
+	var result: Array = []
+	for hazard: Dictionary in state.config.get("hazards", []):
+		if int(hazard.step) == RouteRules.step(state): result.append(hazard.duplicate(true))
+	return result
+
+static func action_cost(state: Dictionary, item: Dictionary) -> Dictionary:
+	var base := int(item.get("cost", 0))
+	var extra := 0
+	var sources: Array[String] = []
+	for hazard: Dictionary in active_hazards(state):
+		if not EffectApplier.has_tags(item, hazard.required_tags): continue
+		for cell: Vector2i in item.get("cells", []):
+			if cell in hazard.cells:
+				extra += int(hazard.cost_increase)
+				sources.append(str(hazard.label))
+				break
+	return {"base":base, "extra":extra, "total":base + extra, "sources":sources}
+
 static func action_result(items: Dictionary, uid: String) -> Dictionary:
 	var plans := EffectApplier.plan(items, uid, "use")
 	var sources: Array[String] = []
@@ -40,7 +60,7 @@ static func passive_guard(items: Dictionary) -> int:
 static func synergy_links(items: Dictionary, focus: String) -> Dictionary:
 	# Only actual resolved plans supply links; never reimplement range/group rules here.
 	if not items.has(focus): return {"links": [], "error": ""}
-	if not EffectApplier.within_budget(items): return {"links": [], "error": "효과 계획의 처리 한도를 초과했습니다."}
+	if not EffectApplier.within_budget(items): return {"links": [], "error": "Effect plan exceeds the processing limit."}
 	var links: Array[Dictionary] = []
 	var ids: Array = items.keys()
 	ids.sort()

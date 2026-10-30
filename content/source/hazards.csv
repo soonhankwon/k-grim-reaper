@@ -1,0 +1,2 @@
+id,step,cells,required_tags,cost_increase,label,description
+edge_frost,1,0:0|1:0|2:0|3:0|4:0,weapon,1,Spirit's Chill,Cold has settled on the bag. Rotate or move a weapon to avoid it.

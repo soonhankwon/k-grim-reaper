@@ -20,7 +20,7 @@ func _run() -> void:
 	root.add_child(main)
 	await process_frame
 	await process_frame
-	verify(main.layout.guide.visible and main.layout.guide.heading.text == "보따리 준비", "new run shows packing guide")
+	verify(main.layout.guide.visible and main.layout.guide.heading.text == "Prepare Your Bag", "new run shows packing guide")
 	var before: Dictionary = main.session.state_snapshot()
 	var saved := FileAccess.get_sha256(slot)
 	main.layout.buttons.guide.pressed.emit()
@@ -50,30 +50,30 @@ func _run() -> void:
 		root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../build/guide-screen.png"))
 	main._primary_action()
 	main.session.skip_playback()
-	verify(main.layout.guide.heading.text == "전투 중", "combat guide follows displayed phase")
+	verify(main.layout.guide.heading.text == "In Battle", "combat guide follows displayed phase")
 	await process_frame
 	verify(main.layout.guide.get_combined_minimum_size().y <= 250.0, "combat guide text fits")
 	var state: Dictionary = main.session.display_snapshot()
 	state.enemy_health = 1
 	main.session.reset(main.inventory, state)
 	main._activate_item("sword")
-	verify(main.session.state_snapshot().phase == "reward" and main.layout.guide.heading.text == "전투 중", "guide does not reveal victory before playback")
+	verify(main.session.state_snapshot().phase == "reward" and main.layout.guide.heading.text == "In Battle", "guide does not reveal victory before playback")
 	main.session.skip_playback()
-	verify(main.layout.guide.heading.text == "보상과 정리", "reward guide follows victory playback")
+	verify(main.layout.guide.heading.text == "Reward and Preparation", "reward guide follows victory playback")
 	await process_frame
 	verify(main.layout.guide.get_combined_minimum_size().y <= 250.0, "reward guide text fits")
 	main.layout.rewards.choices[0].pressed.emit()
 	main.session.skip_playback()
-	verify("자리가 부족하면" in main.layout.guide.body.text, "selected reward has placement guidance")
+	verify("storage if you need room" in main.layout.guide.body.text, "selected reward has placement guidance")
 	main._reward_action("reward_skip")
 	main.session.skip_playback()
-	verify(main.layout.guide.heading.text == "길이 열렸습니다", "victory guidance follows reward")
+	verify(main.layout.guide.heading.text == "The Way Is Clear", "victory guidance follows reward")
 	main._primary_action()
 	main.session.skip_playback()
-	verify(main.layout.guide.heading.text == "길가의 선택", "event guidance follows event display")
+	verify(main.layout.guide.heading.text == "A Choice on the Road", "event guidance follows event display")
 	main._event_action("event_leave")
 	main.session.skip_playback()
-	verify(main.layout.guide.heading.text == "갈림길", "route guidance follows route display")
+	verify(main.layout.guide.heading.text == "Crossroads", "route guidance follows route display")
 	await process_frame
 	verify(main.layout.guide.get_combined_minimum_size().y <= 250.0, "route guide text fits")
 	before = main.session.state_snapshot()
@@ -81,7 +81,7 @@ func _run() -> void:
 	verify(main.session.state_snapshot() == before, "direct primary action at route cannot reset progress")
 	main.layout.routes.choices[1].pressed.emit()
 	main.session.skip_playback()
-	verify(main.layout.guide.heading.text == "보따리 준비" and main.session.display_snapshot().encounter == 2, "guide returns to preparation on selected path")
+	verify(main.layout.guide.heading.text == "Prepare Your Bag" and main.session.display_snapshot().encounter == 2, "guide returns to preparation on selected path")
 	before = main.session.display_snapshot()
 	saved = FileAccess.get_sha256(slot)
 	main.queue_free()
@@ -90,7 +90,7 @@ func _run() -> void:
 	main.save_path = slot
 	root.add_child(main)
 	await process_frame
-	verify(main.session.display_snapshot() == before and main.layout.guide.heading.text == "보따리 준비" and FileAccess.get_sha256(slot) == saved, "resume keeps save and shows current guide")
+	verify(main.session.display_snapshot() == before and main.layout.guide.heading.text == "Prepare Your Bag" and FileAccess.get_sha256(slot) == saved, "resume keeps save and shows current guide")
 	main.queue_free()
 	await process_frame
 	print("GUIDE UI: ", "FAIL" if failed else "PASS")

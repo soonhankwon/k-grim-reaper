@@ -68,9 +68,9 @@ func is_packed(uid: String) -> bool:
 
 func placement_error(uid: String, origin: Vector2i, rotation: int) -> String:
 	if not items.has(uid):
-		return "물건을 먼저 선택하세요."
+		return "Select an item first."
 	if locked:
-		return "전투 중에는 보따리를 정리할 수 없습니다."
+		return "You cannot rearrange your bag during battle."
 	var active_units := definition(uid).effects.size()
 	var active_items := 1
 	for other: String in items:
@@ -78,14 +78,14 @@ func placement_error(uid: String, origin: Vector2i, rotation: int) -> String:
 			active_units += definition(other).effects.size()
 			active_items += 1
 	if active_units > EffectApplier.MAX_ACTIVE_UNITS or active_items > EffectApplier.MAX_ACTIVE_ITEMS:
-		return "동시에 장착할 수 있는 효과 수를 초과합니다."
+		return "Too many equipped effects."
 	for cell in GridRules.cells(definition(uid).footprint, rotation):
 		var target := origin + cell
 		if target.x < 0 or target.y < 0 or target.x >= dimensions.x or target.y >= dimensions.y:
-			return "보따리 밖으로 벗어납니다."
+			return "Outside the bag."
 		var other := item_at(target)
 		if not other.is_empty() and other != uid:
-			return "다른 물건과 겹칩니다."
+			return "Overlaps another item."
 	return ""
 
 func place(uid: String, origin: Vector2i, rotation: int) -> bool:

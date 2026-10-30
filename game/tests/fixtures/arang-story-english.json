@@ -1,0 +1,26 @@
+{
+  "schema_version": 1,
+  "entries": [
+    {
+      "id": "assignment",
+      "min_completed": 0,
+      "title": "The First Night in Miryang",
+      "teaser": "Your first task: protect the new magistrate.",
+      "text": "The previous magistrates died mysteriously on their first night. A rookie reaper is sent to protect the fourth and investigate the spirit haunting the office."
+    },
+    {
+      "id": "trace",
+      "min_completed": 1,
+      "title": "A Trace in the Bamboo",
+      "teaser": "Find the story the spirit wants to tell.",
+      "text": "After calming the guard, the reaper finds a trace in the bamboo grove. If you keep the mirror, you must make room for it yourself."
+    },
+    {
+      "id": "encounter",
+      "min_completed": 1,
+      "title": "Arang’s Voice",
+      "teaser": "Soothe her by force, or show her the evidence.",
+      "text": "Arang is more than a fearsome spirit: she wants someone to hear the injustice she suffered. Put the mirror in your bag before battle to show it to her."
+    }
+  ]
+}

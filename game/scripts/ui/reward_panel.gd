@@ -10,22 +10,14 @@ var _row: HBoxContainer
 var _heading: Label
 
 func _ready() -> void:
-	position = Vector2(24, 486)
-	size = Vector2(1232, 200)
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color("202b2c")
-	style.border_color = Color("8b7955")
-	style.set_border_width_all(2)
-	style.content_margin_left = 14
-	style.content_margin_right = 14
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	add_theme_stylebox_override("panel", style)
+	position = Vector2(24, 466)
+	size = Vector2(1232, 220)
+	add_theme_stylebox_override("panel", WoodcutSkin.box("panel"))
 	var column := VBoxContainer.new()
 	column.add_theme_constant_override("separation", 8)
 	add_child(column)
 	_heading = Label.new()
-	_heading.add_theme_font_size_override("font_size", 16)
+	_heading.add_theme_font_size_override("font_size", 20)
 	_heading.add_theme_color_override("font_color", Color("e0bb74"))
 	column.add_child(_heading)
 	_row = HBoxContainer.new()
@@ -55,7 +47,7 @@ func refresh(view: Dictionary, definitions: Dictionary, busy: bool) -> void:
 			card.focus_entered.connect(func(): inspected.emit(id))
 			_row.add_child(card)
 			choices.append(card)
-	_heading.text = "길을 연 보답 · %d개 중 하나 선택 · 보따리에 배치한 뒤 우측에서 확정" % reward.candidates.size()
+	_heading.text = "Reward · Choose one of %d · Place it in your bag, then confirm" % reward.candidates.size()
 	for card in choices:
 		card.disabled = busy
 		card.chosen = str(card.item.id) == reward.selected

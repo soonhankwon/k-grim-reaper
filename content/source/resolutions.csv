@@ -1,2 +1,2 @@
 id,event_id,allow_stash,message,result,button,unavailable,completion_title
-evidence_resolution,lost_keepsake,True,동경을 보여 주자 아랑이 말을 잇는다.,"아랑은 동경을 알아보고 자신의 억울함을 직접 이야기한다. 차사는 그 말을 명부에 적고, 진실을 전하겠다고 약속한다. 아랑은 고개를 끄덕이며 스스로 길을 나선다.",동경을 보여 주고 듣는다,증거를 보따리에 넣으면 아랑의 이야기를 들을 수 있습니다.,아랑의 밤 · 첫 인도 완료
+evidence_resolution,lost_keepsake,True,Arang recognizes the mirror and begins to speak.,Arang recognizes the mirror and tells you what happened. You record her words and promise to reveal the truth. She nods and sets out on her own.,Show the mirror and listen,Place the evidence in your bag to hear Arang's story.,Arang's Night · First Delivery Complete

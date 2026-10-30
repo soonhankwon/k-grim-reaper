@@ -1,0 +1,8 @@
+{
+  "target_tag": "footwear",
+  "lure_tag": "distraction",
+  "countdown": 3,
+  "dawn_turn": 6,
+  "energy_penalty": 1,
+  "exposed_rows": 1
+}

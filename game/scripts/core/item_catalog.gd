@@ -28,7 +28,7 @@ static func from_validated(raw: Dictionary) -> InventoryModel:
 	inventory.definitions = catalog.definitions
 	for row: Dictionary in catalog.loadout:
 		if not inventory.add_item(row.id, catalog.definitions[row.item_id], Vector2i(row.x, row.y), row.rotation):
-			last_error = "검증된 초기 배치를 생성하지 못했습니다: " + row.id
+			last_error = "Could not create the validated starting layout: " + row.id
 			return null
 	inventory.authored_items = inventory.items.duplicate(true)
 	inventory.history.clear()

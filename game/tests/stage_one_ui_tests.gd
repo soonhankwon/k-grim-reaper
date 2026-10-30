@@ -74,7 +74,7 @@ func _play(path_index: int, choice: String) -> void:
 	var main := make_main(slot)
 	await process_frame
 	check(not main._save_blocked and main.inventory.config.resolutions.size() == 1, "shipping stage loads")
-	check(main.labels.enemy.text.contains("포졸") and main.layout.background_texture.resource_path.ends_with("arang-office-v1.png"), "intro uses constable and office")
+	check(main.labels.enemy.text.contains("Guard") and main.layout.background_texture.resource_path.ends_with("arang-office-v1.png"), "intro uses constable and office")
 	if "--capture" in OS.get_cmdline_user_args() and path_index == 0 and choice == "resolve":
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../build/arang-stage-office.png"))
@@ -88,10 +88,10 @@ func _play(path_index: int, choice: String) -> void:
 		check(submit(main, {"type":"event_take", "event_id":event.id}) and submit(main, {"type":"event_confirm", "event_id":event.id}), "take evidence while stashed")
 	check(main.layout.routes.visible and main.layout.routes.choices.size() == 2, "two routes visible")
 	for button: Button in main.layout.routes.choices:
-		check(not button.text.contains("그다음:"), "route does not promise an extra encounter")
+		check(not button.text.contains("Then:"), "route does not promise an extra encounter")
 	var selected_route: Dictionary = main.inventory.config.routes[path_index]
 	check(submit(main, {"type":"choose_route", "route_id":selected_route.id}), "select path")
-	check(main.labels.enemy.text == "원혼 아랑" and main.layout.background_texture.resource_path.ends_with("arang-bamboo-v1.png"), "second encounter uses arang and grove")
+	check(main.labels.enemy.text == "Arang, Restless Spirit" and main.layout.background_texture.resource_path.ends_with("arang-bamboo-v1.png"), "second encounter uses arang and grove")
 	var intent: Dictionary = CombatSimulator.intent(main.session.display_snapshot())
 	check(intent.operation == ("set_guard" if path_index == 0 else "damage"), "route displays different opening intention")
 	if choice == "resolve": check(main.session.stash("hat").is_empty() and main.session.place(event.uid, Vector2i(1,2), 0).is_empty(), "evidence fits after meaningful rearrangement")
@@ -119,6 +119,6 @@ func _play(path_index: int, choice: String) -> void:
 	await process_frame
 	main = make_main(slot)
 	await process_frame
-	check(main.session.display_snapshot() == completed and main.layout.buttons.story.text == "사연 4", "ending and story restore")
+	check(main.session.display_snapshot() == completed and main.layout.buttons.story.text == "Story 4", "ending and story restore")
 	main.queue_free()
 	await process_frame

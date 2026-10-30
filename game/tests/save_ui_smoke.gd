@@ -94,8 +94,8 @@ func _run() -> void:
 	await process_frame
 	var recovery_visible := false
 	for child in main.get_children():
-		if child is AcceptDialog and child.title == "이전 저장에서 복구" and child.visible: recovery_visible = true
-	verify(not main._save_blocked and recovery_visible and "누락" in main.labels.notice.text, "backup recovery warns that recent progress may be missing")
+		if child is AcceptDialog and child.title == "Save Restored" and child.visible: recovery_visible = true
+	verify(not main._save_blocked and recovery_visible and "missing" in main.labels.notice.text, "backup recovery warns that recent progress may be missing")
 	main.queue_free()
 	await process_frame
 	# Both broken copies are preserved and the UI cannot overwrite them.
@@ -106,7 +106,7 @@ func _run() -> void:
 	main = make_main(bad)
 	await process_frame
 	verify(main._save_blocked and main.primary.disabled and not main.layout.buttons.restart.disabled and main.recovery_dialog != null, "unreadable save locks gameplay and offers explicit archive")
-	verify(main.layout.guide.heading.text == "저장 확인", "guide reflects blocked save instead of normal gameplay")
+	verify(main.layout.guide.heading.text == "Save Error", "guide reflects blocked save instead of normal gameplay")
 	verify(main.layout.buttons.story.disabled and not main.layout.buttons.story_teaser.visible, "blocked save cannot show a fictitious story state")
 	main._reset_run()
 	verify(FileAccess.get_file_as_string(bad) == "{broken", "blocked restart preserves original file")

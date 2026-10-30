@@ -22,7 +22,7 @@ flowchart TD
 1. `outputs/data-driven-content/balance-template.xlsx`를 Google Sheets로 가져온다. 이 파일은 로컬에서 수식·값·렌더링을 검증한 가져오기용 템플릿이다. Google 계정에 업로드하거나 원격 문서를 생성하지는 않았다.
 2. `effects`의 `_base_amount`와 `Balance`의 연산별 배율을 조정한다. 일반 `amount`는 반올림한 정수 수식 결과다. 밸런스 배율은 아군과 적의 해당 연산 모두에 적용되며, `modify_power`는 `affects` 연산의 배율을 따른다. **`multiply_power`의 amount는 밸런스 배율을 적용하지 않은 정수 배수**다. 필요하면 기획에 맞는 수식으로 교체해도 된다.
 3. 아이템의 비용·횟수·형태·태그·효과 참조는 `items`에서 편집한다. 복합 효과는 `effect_ids`에 `a_hit|b_guard|c_heal`처럼 연결한다. 원수치 변경은 같은 효과 단위를 참조하는 모든 아이템에 반영된다. 별도 수치가 필요하면 효과 행을 복사하고 새 ID를 부여한다.
-4. `items`, `effects`, `tags`, `loadout`, `encounters`, `rules`, `rewards`, `routes`, `events`, `resolutions` 탭을 각각 CSV로 다운로드해 `content/source/`의 동명 파일로 둔다. 헤더는 첫 행이다. `Balance`는 내보내지 않는다. `art.json`은 시각 자료이며 수치 변경 시 그대로 둔다.
+4. `items`, `effects`, `tags`, `loadout`, `encounters`, `rules`, `rewards`, `routes`, `events`, `resolutions`, `hazards` 탭을 각각 CSV로 다운로드해 `content/source/`의 동명 파일로 둔다. 헤더는 첫 행이다. `Balance`는 내보내지 않는다. `art.json`은 시각 자료이며 수치 변경 시 그대로 둔다.
 5. 저장소 루트에서 다음을 실행한다.
 
 ```bash
@@ -58,6 +58,7 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 | `routes.csv` | 갈림길 선택지 | `id`, `name`, `description`, 순서대로 연결한 `encounter_ids`, `reward_ids` |
 | `events.csv` | 첫 보상 뒤 유품 사건 | `id`, `step`, 문구·유품 `item_id`·선택 문구·후속 반응·`heal_amount` |
 | `resolutions.csv` | 사건 후 별도 결말 설정 (없으면 헤더만) | `id`, `event_id`, `allow_stash`, `message`, `result`, `button`, `unavailable`, `completion_title` |
+| `hazards.csv` | 길목별 고정 칸 기력 제약 | `id`, `step`, 절대 `cells`, 대상 `required_tags`, `cost_increase`, 문구 |
 | `rules.csv` | 런 기본 규칙 한 행 | 격자 크기, 최대 체력, 턴 기력, 승리 회복, 플레이어 시각 자료 참조 |
 | `art.json` | 시각 자료 | 공통 팔레트, 아이콘·캐릭터 사각형 데이터. ID로 참조 |
 | `schema.json` | 엔진이 지원하는 계약 | 열·자료형·열거값·범위. 새 동작을 추가할 때 개발자가 변경 |
@@ -172,3 +173,17 @@ Google Sheets의 CSV는 수식을 실행하는 파일이 아니다. 결과 값�
 `resolutions.csv`는 헤더가 필수이며, 기능을 사용하지 않으면 행을 비운다. JSON에서는 필드를 생략하거나 빈 배열로 둘 수 있다. 빈 표는 정규화 과정에서 제거하므로 기존 카탈로그 해시는 유지된다. 행이 있으면 단 하나의 사건을 `event_id`로 참조하고, 보관대 확정 허용 여부와 버튼·결말 문구를 지정한다. 결말은 사건 직후 길목에서만 가능하며, 사건 아이템을 보따리에 휴대한 상태에서 선택한다. 선택한 경로와 무관하게 그 대면 이후 스테이지가 끝나므로 다음 보상은 지급하지 않는다. 다중 사건·여러 결말·다른 위치나 추가 조건은 아직 지원하지 않는다.
 
 `resolutions`에 값이 생기거나 바뀌면 콘텐츠 해시가 바뀐다. 기존 저장과 데이터를 자동으로 혼합하지 않는다. Google Sheets 템플릿의 동명 탭은 현재 아랑 스테이지의 결말 행을 포함하며 다른 탭과 마찬가지로 CSV로 내려받는다. [아랑전설 1스테이지](arang-stage-one.md)가 이 구조를 사용한다.
+
+
+## 길목별 칸 제약
+
+`hazards.csv`는 헤더 필수이고 행이 없으면 기능이 꺼진다. JSON은 필드 생략 또는 빈 배열도 허용하며, 이 둘은 같은 값으로 정규화해 기존 콘텐츠 해시를 유지한다. 한기 데이터와 기력 판정은 [원혼의 한기](frost-grid.md)를 참고한다. 현재 본편에는 아랑 대면 전 위쪽 다섯 칸에 대상 태그 `weapon`과 기력 +1을 적용하는 행이 있다.
+
+
+0.16.0 본편 예시: 옥가락지의 `jade_diagonal_factor`는 대각선 무기 공격에 2배를 적용하며 연못 경로 아랑의 `arang_pain_reaction`은 체력 피해에 공격 2로 반응한다. 두 효과와 적 체력·경로 설명은 CSV와 밸런싱 템플릿에서 관리한다. 기존 아이템·적 정의의 수는 바꾸지 않았다.
+
+
+야광귀 전투의 시험 설정은 [별도 시제품](yagwang-experiment.md)으로 격리했다. `yagwang-rules.json`은 출시용 CSV/JSON 스키마에 포함되지 않으며 Google Sheets 배포용 규칙이 아니다. 본편에 도입할 때 새로운 범용 연산·저장 상태와 함께 데이터 계약을 설계한다.
+
+
+`art.json`의 아이콘 또는 인물 정의는 선택적으로 `texture_path`를, 인물 정의는 추가로 `background_path`를 지정할 수 있다. 경로는 실제 존재하는 `res://assets/visuals/` 아래 PNG만 허용하며 `..`는 거절한다. 경로가 없는 기존 정의는 기존 아틀스 또는 사각형 표현을 그대로 사용한다. 시제품은 별도 카탈로그에서 이 경로를 참조하며, 시제품 전용 그림은 현재 출시 패키지에서 제외한다. 아이템 효과와 전투 규칙은 경로를 해석하지 않는다.

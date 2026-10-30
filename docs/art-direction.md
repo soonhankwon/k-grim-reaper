@@ -2,6 +2,18 @@
 
 민화의 선명한 색면과 책가도 구성, 목판화의 먹선, 수묵화의 여백을 조선풍 저승 인벤토리 퍼즐의 화면 언어로 사용한다. 이 문서는 제작 가설이며 최종 에셋 승인이나 역사적 복식 재현의 근거가 아니다. 기존 소지품과 복식은 [참고 노트](lore-reference.md)를 별도로 확인한다.
 
+## 목판화 UI 시안
+
+갈림길 카드에는 기존 적 아틀스의 초상, 체력, 다음 행동의 검·방패·회복 아이콘과 수치를 표시한다. 반격 조건과 횟수 제한도 카드 안에 남기며, 긴 내용은 스크롤·툴팁으로 확인한다. `game/data/presentation/route-art.json`이 경로 ID와 대숲·연못 실루엣을 연결하고, 정의되지 않은 경로에는 중립 배경을 사용한다. 그림과 아이콘은 표시 전용이며 경로 선택·전투 규칙이나 저장 해시를 바꾸지 않는다.
+
+보따리, 이야기·안내·선택 창에 먹선, 나뭇결과 금속 못을 표현한 32×32 텍스처의 9패치를 사용한다. 조각 패턴은 코드에서 결정적으로 생성하며 가운데와 변은 타일링한다. 버튼은 나무 현판, 주요 행동은 붉은 옻칠 현판으로 구분한다. 마우스와 키보드 포커스의 짧은 탄성은 취소 가능한 Action Queue 명령이 소유한다.
+
+화면은 640×360 논리 뷰포트에 그린다. 레이아웃의 기존 1280×720 좌표는 1/2로 표시하고 본문 글자 크기와 여백을 조정했다. Galmuri11 Bold에서 논리 픽셀 단위로 생성한 비트맵 글꼴을 사용하며, 영문과 사용 중인 기호를 포함한다. 원본 TTF와 라이선스는 `game/assets/fonts/`, 재생성 절차는 `game/tools/bake_ui_360_font.gd`에 있다. 아틀스에 없는 글자는 Noto Sans KR을 대체 글꼴로 사용한다.
+
+뷰포트는 정수 배율로 확대한다. 1280×720에서는 2배, 1920×1080에서는 3배이며, 맞지 않는 창에는 화면 주위에 여백이 생긴다. 특히 기존 최소 창 1024×576에서는 1배 640×360 화면과 여백이 표시된다. 창 크기별 버튼·드래그·스크롤 좌표는 자동 검사하며 실제 사용자 가독성 및 Windows 실기기 검증은 별도다.
+
+기존 12개 아이템은 칸당 32×32px 크기의 `items-360-v1.png`로, 기존 차사와 적은 75×66px 전투 표시 영역에 맞춘 `actors-360-v1.png`로 정리했다. 원본 그림의 영역을 nearest 방식으로 축소한 시안이므로 수작업 픽셀 정리와 제한 팔레트 검증을 완료했다는 뜻은 아니다. 원본과 변환 도구 `game/tools/bake_items_360.gd`, `game/tools/bake_actors_360.gd`를 보존한다. 이벤트·보스 컷신의 확대 일러스트와 별도 실험 에셋은 기존 원본을 사용한다.
+
 ## 화면의 명도 계층
 
 1. 원경·중경: 청묵과 어두운 갈색 실루엣, 넓은 안개 여백. 배경 팔레트는 우선 HSV 채도 15% 이하를 목표로 정하되 어두운 색에서 판독되는지 실제로 확인한다. 도깨비불·청사초롱 등 소수의 국소 조명만 쓴다.
@@ -45,3 +57,15 @@
 - 대숲: “Use case: stylized-concept. Asset type: wide pixel art in-game background. Input image is style and value hierarchy reference. Reimagine as a Joseon-era Miryang bamboo grove at night (죽림): layered dark bamboo silhouettes and fog, faint paper lantern on a distant path at an edge, no buildings, no people. Wide composition, empty center, dark desaturated blue ink and charcoal brown, quiet restrained local lights at far edges, low contrast so bright inventory UI overlays the center. Match reference's retro 2D pixel art, crisp angular pixel clusters, Korean woodcut and ink-wash sensibility; no gradients, no text, no UI, no bright moon.”
 
 원본은 고해상도 생성 결과를 nearest 필터로 표시한 정적 시안이다. 엄밀한 32px 격자와 한정 팔레트, 픽셀 단위 수작업·애니메이션·사운드, Windows 실기기 검증은 아직 필요하다. `build/arang-stage-office.png`와 `build/arang-stage-boss.png`는 Godot 실제 화면에서 확인한 캡처다.
+
+## 야광귀 시제품 — 겨울 마을·야광귀·체
+
+내장 이미지 생성기를 사용했고 기존 아랑 배경, 아랑 캐릭터 아틀스, 아이템 아틀스를 각각 스타일 참고 자료로 제공했다. 원본을 그대로 `game/assets/visuals/yagwang-winter-v1.png`, `yagwang-boss-v1.png`, `yagwang-sieve-v1.png`에 보관하며 마지막 두 그림은 투명 알파를 유지한다. 시제품 카탈로그의 이미지 경로로 연결하며 출시 패키지에는 포함하지 않는다. `build/yagwang-battle-screen.png`는 실제 Godot 전투 화면이다.
+
+사용한 프롬프트:
+
+- 배경: “Use case: stylized-concept. Asset type: actual 2D game background. Input image: style, color hierarchy and composition reference only. Create one original wide landscape pixel-art game background of a snow-covered traditional Joseon thatched-roof village courtyard at night on Lunar New Year's Eve. Dark blue-black ink and gray-brown muted shadows, low-contrast snow in layered silhouettes, fog and quiet empty center for inventory UI. Huts, wooden porches and shed silhouettes at far edges; one tiny warm lantern on one far edge, minimal snowflakes. Low flat dark ground for combat sprites. The foreground gameplay UI is NOT part of the image. Crisp coherent retro pixel clusters, Joseon woodcut and folk-painting look matching the reference. Restrained colors, no huge moon, no characters, no interface, no text, no watermark.”
+- 야광귀: “Use case: stylized-concept. Asset type: a single full-body 2D boss sprite for an original Korean folklore game. Input image: style reference only, do not repeat either character. Create one fearsome but non-gory Yagwanggwi shoe-stealing goblin, a lanky one-eyed Korean winter spirit with a small blue goblin flame above its head, elongated limbs, charcoal ink body and a few traditional straw shoes tied around its waist. It faces LEFT toward the player, recognizable in a small 150 x 130 pixel battle area, strong clear silhouette, centered isolated full body with generous transparent margins; entire figure visible, no ground. Match reference style: Joseon retro pixel sprite, thick angular dark woodcut outlines, flat colored pixel clusters, restrained ochre red teal and blue-grey, no anti-aliased smooth painting, no text, no other character, no border. Genuinely transparent background.”
+- 체: “Use case: stylized-concept. Asset type: one 2D inventory item sprite for a Korean Joseon folklore game. Input image: style reference only, do not reproduce other objects. Create exactly ONE old traditional Korean hand sieve, a ROUND oak wooden hoop with fine criss-cross woven horsehair mesh showing clearly countable small square holes, front view slightly tilted, with small red fabric tie, immediately recognizable at small icon size. Match reference items: strongly ink-dark woodcut outline, golden brown wood, parchment straw tones with restrained red accent, crisp retro pixel clusters; centered single full item, generous transparent margins, no hands, no ground, no other objects, no grid, no labels, no text. Genuine transparent background.”
+
+고해상도 생성 비트맵을 nearest 필터로 표시하는 시안이며, 엄밀한 16/32px 격자·한정 팔레트·완성된 움직임이나 역사적 복식 고증을 보장하지 않는다. Windows 실기기와 외부 플레이어의 판독성은 미검증이다.

@@ -59,7 +59,7 @@ func _run() -> void:
 	await process_frame
 	await process_frame
 	verify(FileAccess.get_sha256(slot) == saved and main.layout.buttons.story_teaser.visible, "opening existing save keeps its bytes and shows intro")
-	verify(main.layout.buttons.story.text == "사연 1" and "첫 인도" in main.layout.buttons.story_teaser.text, "only first entry is visible initially")
+	verify(main.layout.buttons.story.text == "Story 1" and "첫 인도" in main.layout.buttons.story_teaser.text, "only first entry is visible initially")
 	var before: Dictionary = main.session.state_snapshot()
 	main.layout.buttons.story_teaser.pressed.emit()
 	verify(main.layout.story.visible and not main.layout.guide.visible and main.layout.story.column.get_child_count() == 2, "teaser opens first entry in notebook")
@@ -79,9 +79,9 @@ func _run() -> void:
 		await RenderingServer.frame_post_draw
 		root.get_texture().get_image().save_png(ProjectSettings.globalize_path("res://../build/story-screen.png"))
 	beat(main)
-	verify(main.session.state_snapshot().phase == "reward" and main.layout.buttons.story.text == "사연 1", "unplayed victory does not reveal a new entry")
+	verify(main.session.state_snapshot().phase == "reward" and main.layout.buttons.story.text == "Story 1", "unplayed victory does not reveal a new entry")
 	main.session.skip_playback()
-	verify(main.layout.buttons.story.text == "사연 2" and main.layout.story.column.get_child_count() == 4, "first victory reveals first trace")
+	verify(main.layout.buttons.story.text == "Story 2" and main.layout.story.column.get_child_count() == 4, "first victory reveals first trace")
 	main._reward_action("reward_skip")
 	main.session.skip_playback()
 	main._primary_action()
@@ -89,13 +89,13 @@ func _run() -> void:
 	verify(main.session.display_snapshot().phase == "event", "event opens after first reward")
 	main._event_action("event_leave")
 	main.session.skip_playback()
-	verify(main.session.display_snapshot().phase == "route" and main.layout.buttons.story.text == "사연 2", "route choice keeps the same unlocked entries")
+	verify(main.session.display_snapshot().phase == "route" and main.layout.buttons.story.text == "Story 2", "route choice keeps the same unlocked entries")
 	main.layout.routes.choices[1].pressed.emit()
 	main.session.skip_playback()
-	verify(main.session.display_snapshot().encounter == 2 and main.layout.buttons.story.text == "사연 2", "alternate enemy order preserves progress")
+	verify(main.session.display_snapshot().encounter == 2 and main.layout.buttons.story.text == "Story 2", "alternate enemy order preserves progress")
 	beat(main)
 	main.session.skip_playback()
-	verify(main.layout.buttons.story.text == "사연 3", "second victory reveals second trace")
+	verify(main.layout.buttons.story.text == "Story 3", "second victory reveals second trace")
 	verify(main.session.display_snapshot().phase == "event_result", "second victory opens follow-up")
 	main._event_action("event_continue")
 	main.session.skip_playback()
@@ -105,10 +105,10 @@ func _run() -> void:
 	main.session.skip_playback()
 	beat(main)
 	main.session.skip_playback()
-	verify(main.session.display_snapshot().phase == "victory" and main.layout.buttons.story.text == "사연 3", "ending waits for final handover")
+	verify(main.session.display_snapshot().phase == "victory" and main.layout.buttons.story.text == "Story 3", "ending waits for final handover")
 	main._primary_action()
 	main.session.skip_playback()
-	verify(main.session.display_snapshot().phase == "complete" and main.layout.buttons.story.text == "사연 4", "completion reveals ending")
+	verify(main.session.display_snapshot().phase == "complete" and main.layout.buttons.story.text == "Story 4", "completion reveals ending")
 	await process_frame
 	await process_frame
 	verify(main.layout.story.scroll.get_v_scroll_bar().max_value > main.layout.story.scroll.size.y, "long notebook remains scrollable")
@@ -122,7 +122,7 @@ func _run() -> void:
 	main.save_path = slot
 	root.add_child(main)
 	await process_frame
-	verify(main.session.display_snapshot() == before and main.layout.buttons.story.text == "사연 4" and FileAccess.get_sha256(slot) == saved, "reopen restores ending without new story state or rewriting save")
+	verify(main.session.display_snapshot() == before and main.layout.buttons.story.text == "Story 4" and FileAccess.get_sha256(slot) == saved, "reopen restores ending without new story state or rewriting save")
 	main.queue_free()
 	await process_frame
 	print("STORY UI: ", "FAIL" if failed else "PASS")
